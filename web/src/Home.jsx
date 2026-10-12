@@ -29,13 +29,16 @@ export default function Home({ go }) {
       <section className="challenge">
         <div className="tag grey">The challenge</div>
         <h2>Compliance is checked by hand, twelve times in a row.<br />Every new environment restarts the chain.</h2>
-        <p>Each handoff re-proves the same policy with a different person. When someone leaves, the process restarts. Security guardrails cannot be bypassed, so speed has to come from how the work is organised, not from skipping checks.</p>
+        <p>Mastercard told us a development environment takes six to eight months and about twelve handoffs. The pattern is industry-wide: approval chains, not provisioning, are the delay, and regulators have started to say so.</p>
         <div className="statcard">
-          <div><b>6 to 8</b><span>months from request to a usable environment, as reported by Mastercard in Discovery</span></div>
+          <div><b>78%</b><span>of engineering teams wait a day or more for DevOps help; 16% wait a week or more</span></div>
           <div className="sep" />
-          <div><span>About</span><b>12</b><span>handoffs per request. Ideal state, in the customer's words: one.</span></div>
-          <small>Source: Garden State discovery interview with Mastercard Business Development, 12 October 2026</small>
+          <div><b>81</b><span>steps, 3 tickets and a change request to ship one line of code at Morgan Stanley</span></div>
+          <div className="sep" />
+          <div><b>90%+</b><span>of major changes approved by change boards in the FCA's review of a million changes, which it called a question over their effectiveness</span></div>
+          <small>Port, State of Internal Developer Portals 2025 · Team Topologies, Jan 2026 (Morgan Stanley, Gus Paul) · UK FCA, Implementing Technology Change, 2021 · Telos: 58 working days per quarter on compliance audits (2020)</small>
         </div>
+        <div className="chips light"><span>Deutsche Bank: 350+ infrastructure policies as code, 3,000+ developers self-serving (HashiCorp)</span><span>Synchrony: pre-approved modules, minutes instead of days (Tensure, 2026)</span><span>Gartner: 80% of large engineering orgs run platform teams by 2026</span></div>
       </section>
 
       <section className="how">
