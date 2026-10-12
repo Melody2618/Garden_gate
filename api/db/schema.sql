@@ -66,3 +66,10 @@ alter table requests enable row level security;
 alter table audit enable row level security;
 alter table rag_chunks enable row level security;
 revoke all on requests, audit, rag_chunks from anon, authenticated;
+-- The server's key (service_role, or an sb_secret_ key, which acts as it) gets only what the API uses. Granted explicitly
+-- because not every project grants service_role new tables by default. Audit gets no update/delete/truncate at all.
+grant select, insert, update on requests to service_role;
+grant select, insert on audit to service_role;
+grant select, insert, delete on rag_chunks to service_role;
+grant usage, select on all sequences in schema public to service_role; -- identity columns (audit.seq, rag_chunks.id)
+grant execute on function match_chunks(vector, text[], int) to service_role;

@@ -11,6 +11,6 @@ function supabase(url, key) {
 // { url, key } from SUPABASE_URL + SUPABASE_SERVICE_KEY, or null when not configured (callers fall back to in-memory).
 function supabaseEnv() {
   const { SUPABASE_URL: url, SUPABASE_SERVICE_KEY: key } = process.env;
-  return url && key ? { url: url.replace(/\/$/, ''), key } : null;
+  return url && key ? { url: url.replace(/\/+$/, '').replace(/\/rest\/v1$/, ''), key } : null; // tolerate the REST URL pasted with /rest/v1
 }
 module.exports = { supabase, supabaseEnv };
