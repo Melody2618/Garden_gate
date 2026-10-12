@@ -75,3 +75,26 @@ table{width:100%;border-collapse:collapse;font-size:13.5px}th{font-size:11.5px;t
 .fixes{display:grid;gap:8px;margin:12px 0}.fixcard{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid #f1c5bf;background:#fff8f7;border-radius:8px;padding:10px 14px}.fixcard b{display:block;color:var(--bad);font-size:13.5px}.fixcard span{display:block;font-size:13.5px;color:var(--ink);margin-top:2px}.fixcard small{display:block;color:var(--grey);font-size:11.5px;margin-top:3px}.fixcard button{margin:0;white-space:nowrap}
 .okbox{background:var(--okbg);border:1px solid #bfe3c9;border-radius:8px;padding:10px 14px;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .stack.small{margin-top:12px}.stack.small span{font-size:11.5px}
+/* Role cards: icon + hover gradient */
+.cardhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}.cardhead b{margin:0}
+.roleicon{display:inline-grid;place-items:center;flex:none;width:34px;height:34px;border-radius:10px;background:var(--tile);color:var(--mc-orange)}.roleicon svg{width:18px;height:18px}
+.card{position:relative;overflow:hidden;isolation:isolate}
+.card::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .25s;background:radial-gradient(420px 220px at 100% 0%,rgba(235,0,27,.28),rgba(247,158,27,.12) 45%,transparent 75%)}
+.card:hover{border-color:var(--mc-orange)}.card:hover::before{opacity:1}.card:hover .roleicon{background:linear-gradient(135deg,var(--mc-red),var(--mc-orange));color:#fff}
+@media (prefers-reduced-motion:reduce){.card,.card::before{transition:none}.card:hover{transform:none}}
+/* Dark theme for the portal (/demo), matched to the pitch deck: near-black page, charcoal cards, orange and red accents */
+body:has(.app){background:radial-gradient(800px 420px at 100% 0%,rgba(199,54,10,.38),rgba(150,23,17,.16) 45%,transparent 70%) no-repeat,#0e0e10}
+.app{--navy:#ffffff;--ink:#e4e4e7;--grey:#a1a1aa;--line:#2a2a30;--pale:#1f1f24;--bg:#0e0e10;--tile:#26262c;--ms-blue:#f79e1b;--ms-blue-dark:#d9820c;--ok:#4ade80;--okbg:rgba(74,222,128,.12);--bad:#ff6b6b;--badbg:rgba(235,0,27,.14);--warn:#fbbf24;--warnbg:rgba(251,191,36,.12);color:var(--ink);accent-color:var(--mc-orange)}
+.app section,.app .card,.app .fit div,.app .stats div{background:#18181c;border-color:var(--line);box-shadow:none}
+.app input,.app select,.app button{background:#18181c;color:var(--ink);border-color:var(--line)}
+.app button.primary{background:var(--mc-orange);border-color:var(--mc-orange);color:#111}.app button.primary:hover{background:var(--ms-blue-dark);color:#111}
+.app .rolebar button.on{background:var(--mc-orange);border-color:var(--mc-orange);color:#111}
+.app .pill{background:#26262c}.app .pill.merged,.app .pill.medium{background:rgba(247,158,27,.14);color:var(--mc-orange)}
+.app .step{background:#1f1f24}.app .step i{background:#2f2f36;color:#ddd}
+.app .compare .today{background:rgba(235,0,27,.1);border-color:rgba(235,0,27,.35)}.app .compare .after{border-color:rgba(74,222,128,.3)}
+.app .fixcard{background:rgba(235,0,27,.08);border-color:rgba(235,0,27,.35)}.app .okbox{border-color:rgba(74,222,128,.3)}
+.app .promise{background:rgba(247,158,27,.1);border-color:rgba(247,158,27,.35);color:#fcd9a5}
+.app .stack span{background:#1f1f24;border-color:#33333a;color:#e4e4e7}.app .stack span.gh{background:#18181c;border-color:#33333a;color:#c9c9cf}
+.app .tiles div.hot b{color:var(--mc-red)}.app .gauge{background:#26262c}
+.app .pill{display:inline-block;padding:2px 9px;font-size:12px;border-radius:999px;cursor:default}
+.app .tabs button{background:none;border-color:transparent}.app .tabs button.on{border-bottom-color:var(--mc-orange)}
