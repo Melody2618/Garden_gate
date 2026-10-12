@@ -1,6 +1,8 @@
 # LaunchGate — Team Garden State × Mastercard (LEAD ASPIRE 2026)
 
-Policy-aware deployment control plane. One request replaces ~12 handoffs. Deterministic rules decide, humans approve, an Azure AI Foundry agent explains, nothing deploys without a human.
+Policy-aware deployment control plane. One request replaces ~12 handoffs. A deterministic readiness model scores risk and decides which handoffs stay human, rules decide pass/fail, an Azure AI Foundry agent running an open model (Phi-4) explains and drafts, humans approve, nothing deploys without a human.
+
+**AI in the stack:** readiness model = transparent weighted scoring (`api/src/lib/model.js`); explainer/risk memo = Azure AI Foundry Agent Service on an open model from the Foundry catalog (Phi-4 default; Llama 3.3 or Mistral Large swap in by changing `FOUNDRY_MODEL`); deterministic fallback when Foundry is not configured. No Hugging Face or external model hosts.
 
 **Stack:** Azure Static Web Apps (React portal in `web/`) + managed Azure Functions API (`api/`, Node) + Azure AI Foundry agent (`agent/`) + Bicep (`infra/`). Built with GitHub Copilot / Claude.
 
@@ -34,7 +36,7 @@ Branch naming: `melanie/portal`, `jayden/api`, `adrian/agent`, `azra/infra`. Reb
 2. **Resource group** `lead` (region `eastus2`).
 3. **Static Web App**: Portal → Create → Static Web App → Free → source GitHub `Melody2618/Garden_gate`, branch `main`, app location `web`, api location `api`, output `dist`. Azure adds the deploy token secret to the repo (our workflow in `.github/workflows` uses it).
 4. **Foundry** (from the starter-kit PDF): Portal → search **Foundry** → Create → resource group `lead` → name `lead-foundry` → project name `launchgate` → Review + create (2–3 min) → **Go to Foundry portal**.
-5. In Foundry: **Models + endpoints → Deploy model → `gpt-4o-mini`** (or any GPT-4.1/4o mini; keep default name). Copy the **project endpoint** from the project Overview (looks like `https://lead-foundry.services.ai.azure.com/api/projects/launchgate`).
+5. In Foundry: **Models + endpoints → Deploy model → search `Phi-4`** (Microsoft's open-weights model; serverless, pay-per-token, no quota request). Keep the deployment name `Phi-4`. Open alternatives that also work with Agent Service: `Llama-3.3-70B-Instruct`, `Mistral-Large-2411`. Put the deployment name in `FOUNDRY_MODEL`. Copy the **project endpoint** from the project Overview (looks like `https://lead-foundry.services.ai.azure.com/api/projects/launchgate`).
 6. Create the agent either in **Agents → New agent** (paste `agent/instructions.md`, pick the model, copy its ID `asst_…`) or from your laptop:
    ```bash
    az login
