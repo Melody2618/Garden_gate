@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from './api.js';
+import Home from './Home.jsx';
 
 const ROLES = {
   owner: { user: 'maria.bd', api: 'requester', title: 'Business owner', blurb: 'I need an environment for a partner project and I want to know how long it takes and who must say yes.', cta: 'Request in plain language' },
@@ -17,7 +18,11 @@ const Pill = ({ v }) => <span className={'pill ' + v}>{v}</span>;
 const Stack = () => <div className="stack">{STACK.map((s) => <span key={s}>{s}</span>)}{GH.map((s) => <span key={s} className="gh">{s}</span>)}</div>;
 
 export default function App() {
-  const [role, setRole] = useState(null);
+  const [path, setPath] = useState(window.location.pathname + window.location.search);
+  const go = (p) => { window.history.pushState({}, '', p); setPath(p); window.scrollTo(0, 0); };
+  useEffect(() => { const f = () => setPath(window.location.pathname + window.location.search); window.addEventListener('popstate', f); return () => window.removeEventListener('popstate', f); }, []);
+  const initialRole = new URLSearchParams(window.location.search).get('role');
+  const [role, setRole] = useState(initialRole && ROLES[initialRole] ? initialRole : null);
   const [form, setForm] = useState(BLANK);
   const [list, setList] = useState([]);
   const [sel, setSel] = useState(null);
@@ -39,36 +44,12 @@ export default function App() {
 
   const Landing = () => (
     <>
-      <section className="hero">
-        <div className="eyebrow">Policy-aware deployment control plane for Mastercard</div>
-        <h1 className="display">From 12 handoffs to one request.<br />Governed by rules, approved by people.</h1>
-        <p className="herolead">Getting a development environment at Mastercard takes six to eight months and about twelve handoffs. LaunchGate writes the policy down as code, lets an AI agent prepare the evidence, routes only the approvals that must stay human, and records everything. Nothing deploys without a person.</p>
-        <div className="herocta"><button className="primary big" onClick={() => setRole('owner')}>Try it as a business owner</button><button className="big" onClick={() => setRole('exec')}>See the executive view</button></div>
-        <div className="trust"><span>Built with</span><b>Microsoft Azure</b><b>Azure AI Foundry</b><b>GitHub Copilot</b><span>for</span><b>Mastercard</b><span>reviewed by</span><b>EY</b></div>
-      </section>
-      <section className="stats">
-        <div><b>12 → 1</b><span>handoffs become one guided request</span></div>
-        <div><b>6–8 mo → minutes</b><span>from request to an approval decision</span></div>
-        <div><b>8 rules</b><span>each citing PCI DSS 4.0.1, NIST 800-53, CIS Azure</span></div>
-        <div><b>0</b><span>deployments without a human approval</span></div>
-      </section>
-      <section className="plain">
-        <h2 className="center">How it works</h2>
-        <div className="features">
-          <div><i className="ic ic1" /><b>Ask once</b><span>A business owner or engineer answers a few questions. Secure defaults are applied; nobody chases twelve teams.</span></div>
-          <div><i className="ic ic2" /><b>Rules decide, instantly</b><span>A deterministic readiness model scores risk and checks every rule. Each result names the control it cites and the fix.</span></div>
-          <div><i className="ic ic3" /><b>Agents prepare, people approve</b><span>An Azure AI Foundry agent on an open model drafts the evidence pack. Security and platform approve in one place; GitHub enforces the gate.</span></div>
-        </div>
-      </section>
-      <section className="plain">
-        <h2 className="center">Choose how you work</h2>
+      <section>
+        <h2>Pick how you work</h2>
+        <p className="lead">Each role sees the same request from its own side: plain questions for a business owner, rule results for an engineer, an evidence pack for reviewers, impact for an executive.</p>
         <div className="cards">{Object.entries(ROLES).map(([k, r]) => <div className="card" key={k} onClick={() => setRole(k)}><b>{r.title}</b><span>{r.blurb}</span><em>{r.cta} →</em></div>)}</div>
       </section>
-      <section className="band">
-        <h2>Compliance built in, not bolted on</h2>
-        <p>PCI DSS 4.0.1 · NYDFS 23 NYCRR 500 · SOX ITGC · NIST SP 800-53 R5 · GLBA Safeguards. Every rule is versioned code with a public source, so the same request gives the same answer every time and an auditor can read why.</p>
-        <Stack />
-      </section>
+      <section><h3>Built on Microsoft Azure and GitHub</h3><Stack /></section>
     </>
   );
 
@@ -191,10 +172,11 @@ export default function App() {
     </>
   );
 
+  if (!path.startsWith('/demo')) return <Home go={(p) => { go(p); const r = new URLSearchParams(p.split('?')[1] || '').get('role'); setRole(r && ROLES[r] ? r : null); }} />;
   return (
     <div className="app">
       <header>
-        <div className="logo" onClick={() => { setRole(null); setSel(null); }}><div className="mark"><i /><i /></div><h1>LaunchGate</h1></div>
+        <div className="logo" onClick={() => { setRole(null); setSel(null); go('/'); }}><div className="mark"><i /><i /></div><h1>LaunchGate</h1></div>
         <span className="sub">Team Garden State for Mastercard · built on Microsoft Azure</span>
         {role && <div className="rolebar">{Object.entries(ROLES).map(([k, r]) => <button key={k} className={role === k ? 'on' : ''} onClick={() => setRole(k)}>{r.title}</button>)}</div>}
       </header>
