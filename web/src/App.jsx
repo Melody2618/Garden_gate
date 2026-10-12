@@ -10,6 +10,16 @@ const ROLES = {
   compliance: { user: 'compliance.officer', api: 'compliance', title: 'Compliance officer', blurb: 'For cardholder-data workloads I need to confirm PCI DSS and NYDFS coverage before anything moves.', cta: 'Confirm coverage' },
   exec: { user: 'exec.viewer', api: 'viewer', title: 'Executive view', blurb: 'Show me the handoffs we removed, the time we saved, and where this fits in Mastercard\'s systems.', cta: 'See the impact' },
 };
+// Line icons for the role cards (Lucide, ISC licence), drawn in the card's accent colour.
+const ICONS = {
+  owner: <><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></>,
+  engineer: <><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></>,
+  security: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></>,
+  platform: <><rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><path d="M6 6h.01M6 18h.01" /></>,
+  compliance: <><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="m9 14 2 2 4-4" /></>,
+  exec: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>,
+};
+const RoleIcon = ({ k }) => <span className="roleicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICONS[k]}</svg></span>;
 const STACK = ['Azure AI Foundry Agent Service', 'Azure OpenAI', 'Azure Functions', 'Azure Static Web Apps', 'Azure Cosmos DB', 'Microsoft Entra ID', 'Azure Policy', 'Microsoft Defender for Cloud', 'Microsoft Fabric'];
 const GH = ['GitHub Copilot', 'GitHub Actions', 'GitHub Advanced Security'];
 const BLANK = { template: 'azure-dev-environment', program: 'card-program', partnerName: '', contractRef: '', intentAuditTrail: true, projectName: '', dataClass: 'internal', region: 'eastus2', encryptionAtRest: true, tlsOnly: true, publicEndpoint: false, loggingEnabled: true, owner: '', costCenter: '', authMethod: 'managed-identity' };
@@ -47,7 +57,7 @@ export default function App() {
       <section>
         <h2>Pick how you work</h2>
         <p className="lead">Each role sees the same request from its own side: plain questions for a business owner, rule results for an engineer, an evidence pack for reviewers, impact for an executive.</p>
-        <div className="cards">{Object.entries(ROLES).map(([k, r]) => <div className="card" key={k} onClick={() => setRole(k)}><b>{r.title}</b><span>{r.blurb}</span><em>{r.cta} →</em></div>)}</div>
+        <div className="cards">{Object.entries(ROLES).map(([k, r]) => <div className="card" key={k} onClick={() => setRole(k)}><div className="cardhead"><RoleIcon k={k} /><b>{r.title}</b></div><span>{r.blurb}</span><em>{r.cta} →</em></div>)}</div>
       </section>
       <section><h3>Built on Microsoft Azure and GitHub</h3><Stack /></section>
     </>
@@ -104,7 +114,7 @@ export default function App() {
     const waiting = q.evaluation.requiredApprovers.filter((a) => !q.approvals[a]);
     const next = q.status === 'blocked' ? `Fix ${failed.length} rule${failed.length > 1 ? 's' : ''} and resubmit` : q.status === 'awaiting-approval' ? `Waiting on ${waiting.join(' and ')}` : q.status === 'approved' ? 'Ready to deploy' : q.status === 'deployed' ? 'Done' : 'Sent back, needs changes';
     const canFix = role === 'owner' || role === 'engineer';
-    const applyFixes = () => { const patch = {}; failed.forEach((f) => Object.assign(patch, FIXES[f.id] || {})); const { id, createdAt, requester, approvals, audit, evaluation, status, deployment, ...rest } = q; const fixed = { ...rest, ...patch }; if (failed.some((f) => f.id === 'GG-006')) { fixed.owner = fixed.owner || 'maria.bd'; fixed.costCenter = fixed.costCenter || 'CC-4410'; } if (failed.some((f) => f.id === 'GG-010')) { fixed.partnerName = fixed.partnerName || 'Northbridge Fintech'; fixed.contractRef = fixed.contractRef || 'MSA-2026-0388'; } setForm(fixed); run(async () => { const r = await c.create(fixed); setAnswer(null); setTab('fix'); await refresh(r.id); }); };
+    const applyFixes = () => { const patch = {}; failed.forEach((f) => Object.assign(patch, FIXES[f.id] || {})); const { id, createdAt, requester, approvals, audit, evaluation, status, deployment, version, hasCode, ...rest } = q; const fixed = { ...rest, ...patch }; if (failed.some((f) => f.id === 'GG-006')) { fixed.owner = fixed.owner || 'maria.bd'; fixed.costCenter = fixed.costCenter || 'CC-4410'; } if (failed.some((f) => f.id === 'GG-010')) { fixed.partnerName = fixed.partnerName || 'Northbridge Fintech'; fixed.contractRef = fixed.contractRef || 'MSA-2026-0388'; } setForm(fixed); run(async () => { const r = await c.create(fixed); setAnswer(null); setTab('fix'); await refresh(r.id); }); };
     const tabs = [['fix', q.status === 'blocked' ? `What to fix (${failed.length})` : 'Summary'], ['rules', `Rules (${q.evaluation.results.length})`], ['handoffs', `Handoffs (${m.handoffs.length})`], ['audit', `Audit (${(q.audit || audit).length})`]];
     return (
       <section className="req">
@@ -131,7 +141,7 @@ export default function App() {
               <button onClick={() => run(async () => { await c.approve(q.id, 'reject', 'needs changes'); await refresh(q.id); })}>Send back</button></>}
             {q.status === 'approved' && R.api === 'platform' && <button className="primary" onClick={() => run(async () => { await c.deploy(q.id); await refresh(q.id); })}>Deploy to Azure (simulated)</button>}
             {q.deployment && <span className="ok">Deployed (simulated) to {q.deployment.resourceGroup} in {q.deployment.region} from the Copilot-drafted Bicep template.</span>}
-            {canFix && <button onClick={() => { const { id, createdAt, requester, approvals, audit, evaluation, status, deployment, ...rest } = q; setForm({ ...rest, projectName: rest.projectName + '-2' }); window.scrollTo(0, 0); }}>Clone for a new partner</button>}
+            {canFix && <button onClick={() => { const { id, createdAt, requester, approvals, audit, evaluation, status, deployment, version, hasCode, ...rest } = q; setForm({ ...rest, projectName: rest.projectName + '-2' }); window.scrollTo(0, 0); }}>Clone for a new partner</button>}
           </div>
           <h3>Ask the Azure AI Foundry agent (read-only)</h3>
           <div className="row"><input className="wide" value={question} onChange={(e) => setQuestion(e.target.value)} /><button onClick={() => run(async () => setAnswer(await c.explain(q.id, question)))}>Ask</button></div>
