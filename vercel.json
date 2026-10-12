@@ -1,2 +1,2 @@
-{ "framework": null, "installCommand": "npm install && npm install --prefix web", "buildCommand": "npm run build --prefix web", "outputDirectory": "web/dist",
-  "rewrites": [ { "source": "/api/gate/:op", "destination": "/api/gate?op=:op" }, { "source": "/((?!api/).*)", "destination": "/index.html" } ] }
+{ "builds": [ { "src": "api/gate.js", "use": "@vercel/node" }, { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "web/dist" } } ],
+  "rewrites": [ { "source": "/api/gate/:op", "destination": "/api/gate.js?op=:op" }, { "source": "/((?!api/).*)", "destination": "/index.html" } ] }
