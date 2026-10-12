@@ -66,3 +66,12 @@ table{width:100%;border-collapse:collapse;font-size:13.5px}th{font-size:11.5px;t
 .statcard>div{max-width:360px}
 .promise{background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;padding:10px 14px;border-radius:8px;font-size:14px;margin:8px 0 0}
 .dimline{color:#8a8a90;font-weight:500}
+/* Request page */
+.reqhead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}.reqhead h2{margin:0 0 6px}.next{font-size:14px;color:var(--ink)}
+.stepper{display:flex;gap:4px;align-items:center}.step{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--grey);padding:6px 10px;border-radius:999px;background:#f3f4f7}.step i{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#dfe2e8;color:#555;font-style:normal;font-size:11px;font-weight:600}.step.done{background:var(--okbg);color:var(--ok)}.step.done i{background:var(--ok);color:#fff}
+.compare.slim div{padding:10px 14px}.compare.slim big{font-size:22px}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:14px 0 12px}.tabs button{margin:0;border:none;border-bottom:2px solid transparent;border-radius:0;padding:8px 12px;background:none;color:var(--grey)}.tabs button.on{color:var(--ms-blue);border-bottom-color:var(--ms-blue)}.tabs button:hover{color:var(--ms-blue)}
+.row.between{justify-content:space-between}.err.slim{margin:0;flex:1}
+.fixes{display:grid;gap:8px;margin:12px 0}.fixcard{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid #f1c5bf;background:#fff8f7;border-radius:8px;padding:10px 14px}.fixcard b{display:block;color:var(--bad);font-size:13.5px}.fixcard span{display:block;font-size:13.5px;color:var(--ink);margin-top:2px}.fixcard small{display:block;color:var(--grey);font-size:11.5px;margin-top:3px}.fixcard button{margin:0;white-space:nowrap}
+.okbox{background:var(--okbg);border:1px solid #bfe3c9;border-radius:8px;padding:10px 14px;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stack.small{margin-top:12px}.stack.small span{font-size:11.5px}
