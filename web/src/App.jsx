@@ -66,7 +66,7 @@ export default function App() {
   const OwnerForm = () => (
     <section>
       <h2>Tell us about the program in plain language</h2>
-      <p className="lead">Answer a few questions. LaunchGate fills in the secure defaults, checks the rules, and tells you who has to approve and how long it should take.</p>
+      <p className="lead">Answer a few questions. GardenGate fills in the secure defaults, checks the rules, and tells you who has to approve and how long it should take.</p>
       <div className="scen">Try an example: <button onClick={() => loadScenario('approved')}>fintech card program</button><button onClick={() => loadScenario('agentpay')}>Agent Pay airline integration</button><button onClick={() => loadScenario('compliant')}>internal service</button><button onClick={() => loadScenario('blocked')}>misconfigured program</button></div>
       <div className="grid">
         <label>What kind of program?<select value={form.program} onChange={(e) => set('program', e.target.value)}><option value="card-program">Partner card program (fintech, co-brand)</option><option value="agent-pay">Agent Pay integration (agentic commerce)</option><option value="internal-service">Internal service</option></select></label>
@@ -124,7 +124,7 @@ export default function App() {
         </div>
         <div className="compare slim">
           <div className="today"><h4>Today at Mastercard</h4><big>12 handoffs</big><small>6 to 8 months (reported)</small></div>
-          <div className="after"><h4>With LaunchGate</h4><big>1 request + {m.summary.human} human {m.summary.human === 1 ? 'approval' : 'approvals'}</big><small>{m.summary.automated} automated, {m.summary.merged} merged. Risk {m.riskScore}/100, {m.tierLabel.toLowerCase()}. Typical turnaround {m.todaySla}.</small></div>
+          <div className="after"><h4>With GardenGate</h4><big>1 request + {m.summary.human} human {m.summary.human === 1 ? 'approval' : 'approvals'}</big><small>{m.summary.automated} automated, {m.summary.merged} merged. Risk {m.riskScore}/100, {m.tierLabel.toLowerCase()}. Typical turnaround {m.todaySla}.</small></div>
         </div>
         <div className="tabs">{tabs.map(([k, l]) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
 
@@ -153,7 +153,7 @@ export default function App() {
           {q.evaluation.results.map((r) => <tr key={r.id}><td>{r.id} {r.name}</td><td><Pill v={r.status} /></td><td>{r.controls.join('; ')}</td><td>{r.fix || ''}</td></tr>)}
         </tbody></table>}
 
-        {tab === 'handoffs' && <table><thead><tr><th>#</th><th>Handoff today</th><th>With LaunchGate</th><th></th></tr></thead><tbody>
+        {tab === 'handoffs' && <table><thead><tr><th>#</th><th>Handoff today</th><th>With GardenGate</th><th></th></tr></thead><tbody>
           {m.handoffs.map((h) => <tr key={h.n}><td>{h.n}</td><td><b>{h.name}</b><br /><span className="muted">{h.today}</span></td><td>{h.with}</td><td><Pill v={h.mode} /></td></tr>)}
         </tbody></table>}
 
@@ -178,19 +178,19 @@ export default function App() {
   const Exec = () => (
     <>
       {metrics && <section><h2>Impact so far in this demo</h2>
-        <div className="tiles"><div className="hot"><b>12</b>handoffs today (reported by Mastercard)</div><div className="good"><b>1</b>request in LaunchGate</div><div><b>{metrics.requests}</b>requests</div><div><b>{metrics.blocked}</b>stopped by policy before anyone was emailed</div><div><b>{metrics.deployed}</b>deployed with full audit</div><div className="good"><b>{metrics.avgMinutesRequestToDeploy == null ? '–' : metrics.avgMinutesRequestToDeploy.toFixed(1)}</b>minutes request to deploy</div></div>
+        <div className="tiles"><div className="hot"><b>12</b>handoffs today (reported by Mastercard)</div><div className="good"><b>1</b>request in GardenGate</div><div><b>{metrics.requests}</b>requests</div><div><b>{metrics.blocked}</b>stopped by policy before anyone was emailed</div><div><b>{metrics.deployed}</b>deployed with full audit</div><div className="good"><b>{metrics.avgMinutesRequestToDeploy == null ? '–' : metrics.avgMinutesRequestToDeploy.toFixed(1)}</b>minutes request to deploy</div></div>
       </section>}
       <section><h2>How the handoffs disappear</h2><p className="lead">Eight of the twelve steps become automated checks, three are merged into the single request, and one or two stay human, depending on the risk tier the model assigns. The approval is never automated.</p>
-        <div className="compare"><div className="today"><h4>Today</h4><big>12 people, in sequence</big><small>Each one re-checks policy by hand. If someone leaves, the process restarts.</small></div><div className="after"><h4>With LaunchGate</h4><big>Rules as code + 1–2 approvers</big><small>Same input gives the same result every time, with PCI DSS and NIST citations attached.</small></div></div>
+        <div className="compare"><div className="today"><h4>Today</h4><big>12 people, in sequence</big><small>Each one re-checks policy by hand. If someone leaves, the process restarts.</small></div><div className="after"><h4>With GardenGate</h4><big>Rules as code + 1–2 approvers</big><small>Same input gives the same result every time, with PCI DSS and NIST citations attached.</small></div></div>
       </section>
-      <section><h2>Where it fits in Mastercard's systems</h2><p className="lead">From public sources: Mastercard runs a global on-prem OpenShift estate plus AWS and Azure for internal applications, uses Jenkins, Ansible and Terraform, and already hires for policy-as-code (OPA, Conftest, Sentinel) and PCI DSS gates in CI. LaunchGate sits in front of that pipeline rather than replacing it.</p>
+      <section><h2>Where it fits in Mastercard's systems</h2><p className="lead">From public sources: Mastercard runs a global on-prem OpenShift estate plus AWS and Azure for internal applications, uses Jenkins, Ansible and Terraform, and already hires for policy-as-code (OPA, Conftest, Sentinel) and PCI DSS gates in CI. GardenGate sits in front of that pipeline rather than replacing it.</p>
         <div className="fit">
           <div><b>Identity</b><span>Microsoft Entra ID issues the requester and approver roles; Conditional Access applies.</span></div>
           <div><b>Rules</b><span>Azure Policy schema today; exportable to OPA/Conftest so the same rules run in Jenkins and in Azure.</span></div>
           <div><b>Evidence</b><span>Azure AI Foundry agent drafts the risk memo and explains results; Defender for Cloud scores the deployed environment against PCI DSS 4 and NIST 800-53.</span></div>
           <div><b>Provisioning</b><span>Approved Bicep (or Terraform) goes to GitHub Actions behind an environment protection rule; Azure Deployment Environments in pilot.</span></div>
           <div><b>Record</b><span>Append-only audit in Cosmos DB; Fabric dashboard reports cycle time per request for SOX and PCI evidence.</span></div>
-          <div><b>Data</b><span>Purview sensitivity labels select the rule pack; no cardholder data ever enters LaunchGate itself.</span></div>
+          <div><b>Data</b><span>Purview sensitivity labels select the rule pack; no cardholder data ever enters GardenGate itself.</span></div>
         </div>
       </section>
       <section><h2>Compliance we target</h2>
@@ -207,7 +207,7 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <div className="logo" onClick={() => { setRole(null); setSel(null); go('/'); }}><div className="mark"><i /><i /></div><h1>LaunchGate</h1></div>
+        <div className="logo" onClick={() => { setRole(null); setSel(null); go('/'); }}><div className="mark"><i /><i /></div><h1>GardenGate</h1></div>
         <span className="sub">Team Garden State for Mastercard · built on Microsoft Azure</span>
         {role && <div className="rolebar">{Object.entries(ROLES).map(([k, r]) => <button key={k} className={role === k ? 'on' : ''} onClick={() => setRole(k)}>{r.title}</button>)}</div>}
       </header>

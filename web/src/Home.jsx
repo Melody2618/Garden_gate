@@ -7,22 +7,22 @@ export default function Home({ go }) {
   return (
     <div className="home">
       <div className="ticker"><div className="ticker-track">{[0, 1, 2].map((i) => <span key={i}>✦ {BANNER}</span>)}</div></div>
-      <nav className="nav"><div className="logo" onClick={() => go('/')}><div className="mark"><i /><i /></div><span>LaunchGate</span></div><button className="pill dark" onClick={() => go('/demo')}>Try the demo <i className="arr">→</i></button></nav>
+      <nav className="nav"><div className="logo" onClick={() => go('/')}><div className="mark"><i /><i /></div><span>GardenGate</span></div><button className="pill dark" onClick={() => go('/demo')}>Try the demo <i className="arr">→</i></button></nav>
 
       <section className="hero2">
         <h1>Mastercard promises partners a card program<br />in as fast as 15 days.</h1>
         <h1 className="dim">Its own engineers wait 6 to 8 months for an environment.</h1>
         <div className="herocard">
           <div className="fakeinput"><span className="dot" /> When can I tell the partner we go live?</div>
-          <button className="pill dark big" onClick={() => go('/demo')}>Open the LaunchGate demo <i className="arr">→</i></button>
-          <div className="chips"><span>6 to 8 months today</span><span>12 handoffs</span><span>LaunchGate: 1 request + the approvals that must stay human</span></div>
+          <button className="pill dark big" onClick={() => go('/demo')}>Open the GardenGate demo <i className="arr">→</i></button>
+          <div className="chips"><span>6 to 8 months today</span><span>12 handoffs</span><span>GardenGate: 1 request + the approvals that must stay human</span></div>
         </div>
       </section>
 
       <section className="black">
         <div className="tag">● The platform behind governed delivery</div>
         <h2>Give Mastercard's own engineers<br />the Product Express promise.</h2>
-        <p>Externally, Mastercard already runs the one-governed-request model: Product Express pre-certifies partners, reduces onboarding conditions and shows status to every party across every phase. Internally, Business Development still waits on about twelve handoffs before a partner program can start. LaunchGate brings the same model inside: policy as code, an Azure AI Foundry agent that prepares the evidence pack, only the approvals that must stay human, and a record of every decision. Nothing deploys without a person.</p>
+        <p>Externally, Mastercard already runs the one-governed-request model: Product Express pre-certifies partners, reduces onboarding conditions and shows status to every party across every phase. Internally, Business Development still waits on about twelve handoffs before a partner program can start. GardenGate brings the same model inside: policy as code, an Azure AI Foundry agent that prepares the evidence pack, only the approvals that must stay human, and a record of every decision. Nothing deploys without a person.</p>
         <div className="row"><button className="pill light" onClick={() => go('/demo')}>Explore the demo <i className="arr">→</i></button><button className="ghost" onClick={() => go('/demo?role=exec')}>See the executive view</button></div>
       </section>
 
