@@ -1,0 +1,7 @@
+api/src/functions
+api/test
+api/dev-server.js
+api/node_modules
+docs
+infra
+agent

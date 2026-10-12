@@ -1,0 +1,2 @@
+{ "name": "launchgate", "private": true, "version": "0.2.0", "scripts": { "test": "node api/test/engine.test.js", "dev": "node api/dev-server.js & npm run dev --prefix web" },
+  "dependencies": { "@azure/ai-projects": "^1.0.0", "@azure/identity": "^4.4.0" } }
