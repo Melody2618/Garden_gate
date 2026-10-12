@@ -34,7 +34,7 @@ Also show: requester cannot approve own request (403), deploy before approval is
 Branch naming: `melanie/portal`, `jayden/api`, `adrian/agent`, `azra/infra`. Rebase on `main` often; nobody force-pushes.
 
 ## Deploy on Vercel (2 min)
-vercel.com → Add New Project → import `Melody2618/Garden_gate` → **Root Directory must stay `.` (repo root)**, Framework Preset `Other` → Deploy. `vercel.json` handles install, build and the `/api/gate` function. Under Settings → Environment Variables, add these **before the first sign-in**, or sign-in returns 503:
+vercel.com → Add New Project → import `Melody2618/Garden_gate` → **Root Directory must stay `.` (repo root)**, Framework Preset `Other` → Deploy. `vercel.json` handles the build and the `/api/gate` function. It lists `api/gate.js` under `builds` so it is the only serverless function: without that, Vercel turns every `.js` file under `api/` into its own function and the Hobby plan's 12-function limit fails the deploy. Because of `builds`, the Build & Development settings in the Vercel dashboard are ignored; the web build runs from the root `vercel-build` script. Under Settings → Environment Variables, add these **before the first sign-in**, or sign-in returns 503:
 - `LAUNCHGATE_SECRET`: a long random string (e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`). Every serverless instance must share it.
 - `DEMO_PASSWORDS`: one password per account, e.g. `{"demo.engineer":"…","sec.reviewer":"…","platform.lead":"…"}`, so the person holding the requester password cannot also approve. Or set `DEMO_PASSWORD` for one shared password. The published `launchgate-demo` is never accepted when hosted.
 
