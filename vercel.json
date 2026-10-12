@@ -1,2 +1,6 @@
-{ "builds": [ { "src": "api/gate.js", "use": "@vercel/node" }, { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "web/dist" } } ],
-  "rewrites": [ { "source": "/api/gate/:op", "destination": "/api/gate.js?op=:op" }, { "source": "/((?!api/).*)", "destination": "/index.html" } ] }
+{ "builds": [ { "src": "api/gate.js", "use": "@vercel/node" }, { "src": "web/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } } ],
+  "rewrites": [
+    { "source": "/api/gate/:op", "destination": "/api/gate.js?op=:op" },
+    { "source": "/assets/:path*", "destination": "/web/assets/:path*" },
+    { "source": "/scenarios/:path*", "destination": "/web/scenarios/:path*" },
+    { "source": "/((?!api/).*)", "destination": "/web/index.html" } ] }
