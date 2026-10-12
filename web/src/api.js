@@ -1,8 +1,11 @@
 // API client. The server is the source of truth: the browser sends request ids, never request objects, and stores nothing
 // but a short-lived signed token per demo user (in memory). Roles are decided by the server from the signed-in user.
 // In a pilot, sign-in moves to Microsoft Entra ID via Static Web Apps auth.
-const DEMO_PASSWORD = 'launchgate-demo'; // demo accounts only; matches api DEMO_PASSWORD default
+// Passwords are typed by the person, never shipped in this bundle (anything here is public). Each demo account can have
+// its own password on the server; running locally, every account accepts launchgate-demo.
+const passwords = {};
 const tokens = {};
+const pending = {}; // one sign-in prompt per account even if several calls need a token at once
 
 const post = async (op, body, token) => {
   const headers = { 'Content-Type': 'application/json' };
@@ -14,8 +17,13 @@ const post = async (op, body, token) => {
 };
 
 export const api = (user) => {
+  const signIn = () => pending[user] ||= (async () => {
+    if (passwords[user] === undefined) passwords[user] = window.prompt(`Password for ${user}`) ?? '';
+    try { tokens[user] = (await post('login', { username: user, password: passwords[user] })).token; }
+    catch (e) { delete passwords[user]; throw e; } // wrong password: ask again next time
+  })().finally(() => { delete pending[user]; });
   const token = async (fresh) => {
-    if (fresh || !tokens[user]) tokens[user] = (await post('login', { username: user, password: DEMO_PASSWORD })).token;
+    if (fresh || !tokens[user]) await signIn();
     return tokens[user];
   };
   // Retry once with a fresh token if the old one expired or the server restarted with a new secret.

@@ -4,6 +4,7 @@
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "LAUNCHGATE_SECRET": "",
     "DEMO_PASSWORD": "launchgate-demo",
+    "DEMO_PASSWORDS": "",
     "SUPABASE_URL": "",
     "SUPABASE_SERVICE_KEY": "",
     "RAG_ENABLED": "on",

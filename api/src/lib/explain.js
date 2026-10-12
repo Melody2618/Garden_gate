@@ -3,12 +3,23 @@
 // Answers carry aiGenerated so the portal can label model output as such (transparency).
 const DISCLAIMER = 'AI-generated explanation. It can be wrong; the rule results above are authoritative and only humans approve.';
 
+// Deterministic answer, worded for where the request actually is.
+function fallbackText(req, evaluation) {
+  const failed = evaluation.results.filter((r) => r.status === 'fail');
+  if (failed.length) return `Your request ${req.id} is blocked by ${failed.length} rule(s): ` + failed.map((f) => `${f.id} ${f.name} (${f.controls[0]}). Fix: ${f.fix}`).join(' | ');
+  const required = evaluation.requiredApprovers;
+  const decided = (d) => required.filter((a) => req.approvals?.[a]?.decision === d).join(', ');
+  switch (req.status) {
+    case 'rejected': return `Request ${req.id} passed all automated checks but was sent back by: ${decided('reject')}. Read their note on the request, change what they asked for and submit a new request.`;
+    case 'approved': return `Request ${req.id} passed all automated checks and has every required approval (${required.join(', ')}). It is ready for the platform team to deploy.`;
+    case 'deployed': return `Request ${req.id} passed all automated checks, was approved by ${required.join(', ')} and has been deployed (simulated) to ${req.deployment?.resourceGroup} in ${req.deployment?.region}.`;
+    default: return `Request ${req.id} passed all automated checks. It is waiting on human approval from: ${required.filter((a) => !req.approvals?.[a]).join(', ')}.`;
+  }
+}
+
 async function explain(req, evaluation, question) {
   question = question || 'Why is my request blocked and what should I change?';
-  const failed = evaluation.results.filter((r) => r.status === 'fail');
-  const fallback = failed.length
-    ? `Your request ${req.id} is blocked by ${failed.length} rule(s): ` + failed.map((f) => `${f.id} ${f.name} (${f.controls[0]}). Fix: ${f.fix}`).join(' | ')
-    : `Request ${req.id} passed all automated checks. It is waiting on human approval from: ${evaluation.requiredApprovers.join(', ')}.`;
+  const fallback = fallbackText(req, evaluation);
   const deterministic = (source) => ({ source, aiGenerated: false, answer: fallback });
 
   if (process.env.RAG_ENABLED !== 'off') {

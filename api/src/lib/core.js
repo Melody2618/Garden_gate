@@ -7,6 +7,7 @@ const path = require('path');
 const { evaluate, RULES } = require('./engine');
 const { explain } = require('./explain');
 const { getDb } = require('./db');
+const { fail } = require('./errors');
 const auth = require('./auth');
 const { validateForm, validateCode, validateId, validateText } = require('./validate');
 const { scrub } = require('./scrub');
@@ -21,17 +22,16 @@ const PERMS = {
   export: ['security', 'platform', 'compliance', 'viewer'],
 };
 
-const fail = (status, message) => Object.assign(new Error(message), { status });
 const stamp = (requestId, actor, action, detail = {}) => getDb().appendAudit({ request_id: requestId, actor, action, detail });
 
 // Load a request the caller is allowed to see. A requester asking for someone else's request gets 404, not 403,
-// so ids of other people's requests cannot be confirmed by probing.
+// so ids of other people's requests cannot be confirmed by probing. Writes go through getDb().updateRequest, which
+// refuses (409) if anyone else saved the request since this load, so the checks below never act on a stale copy.
 async function load(id, who) {
   const req = await getDb().getRequest(validateId(id));
   if (!req || (who.role === 'requester' && req.requester !== who.user)) throw fail(404, 'request not found');
   return req;
 }
-const summary = ({ code, ...r }) => ({ ...r, hasCode: Boolean(code) }); // lists never carry submitted code
 
 async function create(form, who) {
   const f = validateForm(form);
@@ -110,7 +110,7 @@ async function dispatch(op, body, who) {
   switch (op) {
     case 'me': return who;
     case 'rules': return RULES;
-    case 'list': return (await getDb().listRequests(who.role === 'requester' ? { requester: who.user } : {})).map(summary);
+    case 'list': return getDb().listRequests(who.role === 'requester' ? { requester: who.user } : {}); // summaries: never carry submitted code
     case 'get': return load(body.id, who);
     case 'audit': await load(body.id, who); return getDb().listAudit({ requestId: body.id });
     case 'create': return create(body.form, who);
@@ -128,9 +128,12 @@ async function handle(op, body = {}, headers = {}) {
   body = body && typeof body === 'object' ? body : {};
   if (op === 'login') {
     try { return { status: 200, body: auth.login(body.username, body.password) }; }
-    catch (e) { await stamp(null, String(body.username || 'unknown').slice(0, 64), 'login-failed').catch(() => {}); throw e; }
+    catch (e) {
+      if ([401, 429].includes(e.status)) await stamp(null, String(body.username || 'unknown').slice(0, 64), e.status === 429 ? 'login-locked' : 'login-failed').catch(() => {});
+      throw e;
+    }
   }
-  if (!(op in PERMS)) return { status: 404, body: { error: 'unknown op ' + op } };
+  if (!Object.hasOwn(PERMS, op)) return { status: 404, body: { error: 'unknown op ' + String(op).slice(0, 40) } }; // not `in`: that also matches toString, __proto__...
   let who;
   try {
     who = auth.verify(headers.authorization);
@@ -142,4 +145,15 @@ async function handle(op, body = {}, headers = {}) {
     throw e;
   }
 }
-module.exports = { handle, PERMS };
+
+// What every host adapter calls, so error mapping and logging live in one place. Never throws. Expected errors keep their
+// status and message; anything else is logged server-side (log: console.error, or the host's logger) and the caller gets a
+// bare "internal error" with no stack trace or internals.
+async function respond(op, body, headers, log = console.error) {
+  try { return await handle(op, body, headers); }
+  catch (e) {
+    if (!e.status) log(`gate ${String(op).slice(0, 40)} failed:`, e);
+    return { status: e.status || 500, body: { error: e.status ? e.message : 'internal error' } };
+  }
+}
+module.exports = { handle, respond, PERMS };

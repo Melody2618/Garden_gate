@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 try { Object.assign(process.env, { ...JSON.parse(fs.readFileSync(path.join(__dirname, 'local.settings.json'), 'utf8')).Values, ...process.env }); } catch {}
 const http = require('http');
-const { handle } = require('./src/lib/core');
+const { respond } = require('./src/lib/core');
 const MAX_BODY = 64 * 1024;
 http.createServer((q, s) => {
   let body = ''; let tooBig = false;
@@ -14,7 +14,6 @@ http.createServer((q, s) => {
     if (tooBig) return;
     const op = q.url.replace(/^\/api\/gate\//, '').split('?')[0];
     let parsed; try { parsed = body ? JSON.parse(body) : {}; } catch { return send(400, { error: 'invalid JSON' }); }
-    try { const out = await handle(op, parsed, { authorization: q.headers.authorization }); send(out.status, out.body); }
-    catch (e) { if (!e.status) console.error(e); send(e.status || 500, { error: e.status ? e.message : 'internal error' }); }
+    const out = await respond(op, parsed, { authorization: q.headers.authorization }); send(out.status, out.body);
   });
 }).listen(7071, '127.0.0.1', () => console.log('LaunchGate API on http://localhost:7071'));
