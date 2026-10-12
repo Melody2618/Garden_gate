@@ -12,7 +12,7 @@ const ROLES = {
 };
 const STACK = ['Azure AI Foundry Agent Service', 'Azure OpenAI', 'Azure Functions', 'Azure Static Web Apps', 'Azure Cosmos DB', 'Microsoft Entra ID', 'Azure Policy', 'Microsoft Defender for Cloud', 'Microsoft Fabric'];
 const GH = ['GitHub Copilot', 'GitHub Actions', 'GitHub Advanced Security'];
-const BLANK = { template: 'azure-dev-environment', projectName: '', dataClass: 'internal', region: 'eastus2', encryptionAtRest: true, tlsOnly: true, publicEndpoint: false, loggingEnabled: true, owner: '', costCenter: '', authMethod: 'managed-identity' };
+const BLANK = { template: 'azure-dev-environment', program: 'card-program', partnerName: '', contractRef: '', intentAuditTrail: true, projectName: '', dataClass: 'internal', region: 'eastus2', encryptionAtRest: true, tlsOnly: true, publicEndpoint: false, loggingEnabled: true, owner: '', costCenter: '', authMethod: 'managed-identity' };
 
 const Pill = ({ v }) => <span className={'pill ' + v}>{v}</span>;
 const Stack = () => <div className="stack">{STACK.map((s) => <span key={s}>{s}</span>)}{GH.map((s) => <span key={s} className="gh">{s}</span>)}</div>;
@@ -55,11 +55,15 @@ export default function App() {
 
   const OwnerForm = () => (
     <section>
-      <h2>Tell us about the project in plain language</h2>
-      <p className="lead">Answer five questions. LaunchGate fills in the secure defaults, checks the rules, and tells you who has to approve and how long it should take.</p>
-      <div className="scen">Try an example: <button onClick={() => loadScenario('compliant')}>partner loyalty API</button><button onClick={() => loadScenario('approved')}>merchant onboarding (customer data)</button><button onClick={() => loadScenario('blocked')}>cardholder insights (misconfigured)</button></div>
+      <h2>Tell us about the program in plain language</h2>
+      <p className="lead">Answer a few questions. LaunchGate fills in the secure defaults, checks the rules, and tells you who has to approve and how long it should take.</p>
+      <div className="scen">Try an example: <button onClick={() => loadScenario('approved')}>fintech card program</button><button onClick={() => loadScenario('agentpay')}>Agent Pay airline integration</button><button onClick={() => loadScenario('compliant')}>internal service</button><button onClick={() => loadScenario('blocked')}>misconfigured program</button></div>
       <div className="grid">
-        <label>What are you building?<input placeholder="e.g. partner-loyalty-api" value={form.projectName} onChange={(e) => set('projectName', e.target.value)} /></label>
+        <label>What kind of program?<select value={form.program} onChange={(e) => set('program', e.target.value)}><option value="card-program">Partner card program (fintech, co-brand)</option><option value="agent-pay">Agent Pay integration (agentic commerce)</option><option value="internal-service">Internal service</option></select></label>
+        <label>What are you building?<input placeholder="e.g. northbridge-card-launch" value={form.projectName} onChange={(e) => set('projectName', e.target.value)} /></label>
+        {form.program !== 'internal-service' && <label>Which partner?<input placeholder="partner name" value={form.partnerName} onChange={(e) => set('partnerName', e.target.value)} /></label>}
+        {form.program !== 'internal-service' && <label>Contract or due-diligence reference<input placeholder="e.g. MSA-2026-0388" value={form.contractRef} onChange={(e) => set('contractRef', e.target.value)} /></label>}
+        {form.program === 'agent-pay' && <label className="chk"><input type="checkbox" checked={form.intentAuditTrail} onChange={(e) => set('intentAuditTrail', e.target.checked)} /> Verifiable Intent audit trail enabled for agent transactions</label>}
         <label>Does it touch customer or card data?<select value={form.dataClass} onChange={(e) => set('dataClass', e.target.value)}><option value="internal">No, internal data only</option><option value="confidential">Customer data (confidential)</option><option value="restricted">Cardholder data (restricted)</option></select></label>
         <label>Who is accountable for it?<input placeholder="business owner" value={form.owner} onChange={(e) => set('owner', e.target.value)} /></label>
         <label>Which budget pays for it?<input placeholder="cost center, e.g. CC-4410" value={form.costCenter} onChange={(e) => set('costCenter', e.target.value)} /></label>
@@ -74,9 +78,12 @@ export default function App() {
   const EngineerForm = () => (
     <section>
       <h2>Technical request</h2>
-      <div className="scen">Load scenario: <button onClick={() => loadScenario('compliant')}>compliant</button><button onClick={() => loadScenario('blocked')}>blocked</button><button onClick={() => loadScenario('approved')}>needs security approval</button></div>
+      <div className="scen">Load scenario: <button onClick={() => loadScenario('agentpay')}>agent pay</button><button onClick={() => loadScenario('compliant')}>compliant</button><button onClick={() => loadScenario('blocked')}>blocked</button><button onClick={() => loadScenario('approved')}>needs security approval</button></div>
       <div className="grid">
+        <label>Program<select value={form.program} onChange={(e) => set('program', e.target.value)}><option>card-program</option><option>agent-pay</option><option>internal-service</option></select></label>
         <label>Project name<input value={form.projectName} onChange={(e) => set('projectName', e.target.value)} /></label>
+        <label>Partner<input value={form.partnerName} onChange={(e) => set('partnerName', e.target.value)} /></label>
+        <label>Contract ref<input value={form.contractRef} onChange={(e) => set('contractRef', e.target.value)} /></label>
         <label>Data classification<select value={form.dataClass} onChange={(e) => set('dataClass', e.target.value)}><option>internal</option><option>confidential</option><option>restricted</option></select></label>
         <label>Region<select value={form.region} onChange={(e) => set('region', e.target.value)}><option>eastus</option><option>eastus2</option><option>centralus</option><option>westeurope</option></select></label>
         <label>Auth method<select value={form.authMethod} onChange={(e) => set('authMethod', e.target.value)}><option>managed-identity</option><option>connection-string</option></select></label>
@@ -92,11 +99,13 @@ export default function App() {
     const m = q.evaluation.model;
     return (
       <section>
-        <h2>{q.id} · {q.projectName} <Pill v={q.status} /></h2>
+        <h2>{q.id} · {q.projectName} <Pill v={q.status} /> <span className="muted">{q.program}{q.partnerName ? ' · ' + q.partnerName : ''}</span></h2>
+        {(role === 'owner' || role === 'engineer') && <button onClick={() => { const { id, createdAt, requester, approvals, audit, evaluation, status, deployment, ...rest } = q; setForm({ ...rest, projectName: rest.projectName + '-2' }); window.scrollTo(0, 0); }}>Clone this program for a new partner</button>}
         <div className="compare">
           <div className="today"><h4>Today at Mastercard</h4><big>12 handoffs</big><small>6–8 months to a usable environment (as reported in Discovery)</small></div>
           <div className="after"><h4>With LaunchGate</h4><big>1 request + {m.summary.human} human {m.summary.human === 1 ? 'approval' : 'approvals'}</big><small>{m.summary.automated} steps automated, {m.summary.merged} merged into the request. Risk tier: {m.tierLabel.toLowerCase()}, typical turnaround {m.todaySla}.</small></div>
         </div>
+        <p className="promise">{m.promise}</p>
         <h3>Readiness model (deterministic, auditable)</h3>
         <div className="score"><b>Risk {m.riskScore}/100</b><div className="gauge"><i style={{ width: m.riskScore + '%' }} /></div><Pill v={m.tier} /></div>
         <p className="muted">{m.factors.filter((f) => f.points > 0).map((f) => `${f.factor} +${f.points} (${f.because})`).join(' · ') || 'No risk factors raised.'} Must approve: <b>{q.evaluation.requiredApprovers.join(', ')}</b>.</p>
@@ -121,7 +130,7 @@ export default function App() {
         <h3>Ask the Azure AI Foundry agent (read-only, it never approves)</h3>
         <div className="row"><input className="wide" value={question} onChange={(e) => setQuestion(e.target.value)} /><button onClick={() => run(async () => setAnswer(await c.explain(q.id, question)))}>Ask</button></div>
         {answer && <div className="answer"><b>{answer.source}</b><p>{answer.answer}</p></div>}
-        <h3>The 12 handoffs, and what happened to each</h3>
+        <h3>The {m.handoffs.length} handoffs, and what happened to each</h3>
         <table><thead><tr><th>#</th><th>Handoff today</th><th>With LaunchGate</th><th></th></tr></thead><tbody>
           {m.handoffs.map((h) => <tr key={h.n}><td>{h.n}</td><td><b>{h.name}</b><br /><span className="muted">{h.today}</span></td><td>{h.with}</td><td><Pill v={h.mode} /></td></tr>)}
         </tbody></table>
@@ -138,7 +147,7 @@ export default function App() {
         <h2>{title}</h2><p className="lead">{lead}</p>
         {rows.length === 0 ? <p className="muted">Nothing waiting. Submit a request as a business owner or engineer first.</p> :
         <table><thead><tr><th>ID</th><th>Project</th><th>Data</th><th>Risk</th><th>Status</th><th>Approvals</th></tr></thead><tbody>
-          {rows.map((q) => <tr key={q.id} className={'click ' + (sel?.id === q.id ? 'on' : '')} onClick={() => refresh(q.id)}><td>{q.id}</td><td>{q.projectName}</td><td>{q.dataClass}</td><td><Pill v={q.evaluation.model.tier} /></td><td><Pill v={q.status} /></td><td>{q.evaluation.requiredApprovers.map((a) => `${a}: ${q.approvals[a]?.decision || 'waiting'}`).join(' · ')}</td></tr>)}
+          {rows.map((q) => <tr key={q.id} className={'click ' + (sel?.id === q.id ? 'on' : '')} onClick={() => refresh(q.id)}><td>{q.id}</td><td>{q.projectName}<br /><span className="muted">{q.program}{q.partnerName ? ' · ' + q.partnerName : ''}</span></td><td>{q.dataClass}</td><td><Pill v={q.evaluation.model.tier} /></td><td><Pill v={q.status} /></td><td>{q.evaluation.requiredApprovers.map((a) => `${a}: ${q.approvals[a]?.decision || 'waiting'}`).join(' · ')}</td></tr>)}
         </tbody></table>}
       </section>
     );

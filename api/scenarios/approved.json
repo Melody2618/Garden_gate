@@ -1,1 +1,16 @@
-{"template":"azure-dev-environment","projectName":"merchant-onboarding","dataClass":"confidential","region":"eastus","encryptionAtRest":true,"tlsOnly":true,"publicEndpoint":false,"loggingEnabled":true,"owner":"maria.bd","costCenter":"CC-4410","authMethod":"managed-identity"}
+{
+ "template": "azure-dev-environment",
+ "projectName": "merchant-onboarding",
+ "dataClass": "confidential",
+ "region": "eastus",
+ "encryptionAtRest": true,
+ "tlsOnly": true,
+ "publicEndpoint": false,
+ "loggingEnabled": true,
+ "owner": "maria.bd",
+ "costCenter": "CC-4410",
+ "authMethod": "managed-identity",
+ "program": "card-program",
+ "partnerName": "Northbridge Fintech",
+ "contractRef": "MSA-2026-0388"
+}
