@@ -31,7 +31,10 @@ Also show: requester cannot approve own request (403), deploy before approval is
 
 Branch naming: `melanie/portal`, `jayden/api`, `adrian/agent`, `azra/infra`. Rebase on `main` often; nobody force-pushes.
 
-## Azure setup (Azra, ~20 min)
+## Deploy on Vercel (2 min)
+vercel.com → Add New Project → import `Melody2618/Garden_gate` → **Root Directory must stay `.` (repo root)**, Framework Preset `Other` → Deploy. `vercel.json` handles install, build and the `/api/gate` function. Add `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_AGENT_ID`, `FOUNDRY_MODEL` under Settings → Environment Variables when Foundry is ready.
+
+## Azure setup (~20 min)
 1. **Azure for Students** → https://azure.microsoft.com/free/students → sign in with your school account.
 2. **Resource group** `lead` (region `eastus2`).
 3. **Static Web App**: Portal → Create → Static Web App → Free → source GitHub `Melody2618/Garden_gate`, branch `main`, app location `web`, api location `api`, output `dist`. Azure adds the deploy token secret to the repo (our workflow in `.github/workflows` uses it).

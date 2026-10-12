@@ -1,2 +1,2 @@
-{ "buildCommand": "npm install --prefix web && npm run build --prefix web", "outputDirectory": "web/dist", "installCommand": "npm install",
+{ "framework": null, "installCommand": "npm install && npm install --prefix web", "buildCommand": "npm run build --prefix web", "outputDirectory": "web/dist",
   "rewrites": [ { "source": "/api/gate/:op", "destination": "/api/gate?op=:op" }, { "source": "/((?!api/).*)", "destination": "/index.html" } ] }
