@@ -1,16 +1,21 @@
 // Drafted with GitHub Copilot from an approved LaunchGate request. Parameters mirror the request schema.
 // Every resource below satisfies rules GG-001..GG-007: encryption, TLS only, approved region, no public access, logging, tags, managed identity.
-@allowed(['eastus', 'eastus2', 'centralus']) param location string = 'eastus2'
+@allowed(['eastus', 'eastus2', 'centralus'])
+param location string = 'eastus2'
 param projectName string
 param owner string
 param costCenter string
 param dataClass string = 'internal'
-var tags = { owner: owner, costCenter: costCenter, dataClass: dataClass, managedBy: 'LaunchGate' }
+@allowed(['internal', 'card-program', 'agent-pay'])
+param program string = 'internal'
+var tags = { owner: owner, costCenter: costCenter, dataClass: dataClass, program: program, managedBy: 'LaunchGate' }
+// Storage account names must be 3-24 lowercase letters and digits, so long project names are shortened and made unique.
+var storageName = take('st${toLower(replace(projectName, '-', ''))}${uniqueString(resourceGroup().id)}', 24)
 
 resource law 'Microsoft.OperationalInsights/workspaces@2023-09-01' = { name: 'log-${projectName}-dev', location: location, tags: tags, properties: { retentionInDays: 30 } }
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
-  name: toLower(replace('st${projectName}dev', '-', '')), location: location, tags: tags, kind: 'StorageV2', sku: { name: 'Standard_LRS' }
+  name: storageName, location: location, tags: tags, kind: 'StorageV2', sku: { name: 'Standard_LRS' }
   properties: { supportsHttpsTrafficOnly: true, minimumTlsVersion: 'TLS1_2', allowBlobPublicAccess: false, publicNetworkAccess: 'Disabled', encryption: { services: { blob: { enabled: true }, file: { enabled: true } }, keySource: 'Microsoft.Storage' } }
 }
 

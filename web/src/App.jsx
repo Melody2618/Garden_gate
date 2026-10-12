@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from './api.js';
+import Home from './Home.jsx';
 
 const ROLES = {
   owner: { user: 'maria.bd', api: 'requester', title: 'Business owner', blurb: 'I need an environment for a partner project and I want to know how long it takes and who must say yes.', cta: 'Request in plain language' },
@@ -11,13 +12,17 @@ const ROLES = {
 };
 const STACK = ['Azure AI Foundry Agent Service', 'Azure OpenAI', 'Azure Functions', 'Azure Static Web Apps', 'Azure Cosmos DB', 'Microsoft Entra ID', 'Azure Policy', 'Microsoft Defender for Cloud', 'Microsoft Fabric'];
 const GH = ['GitHub Copilot', 'GitHub Actions', 'GitHub Advanced Security'];
-const BLANK = { template: 'azure-dev-environment', projectName: '', dataClass: 'internal', region: 'eastus2', encryptionAtRest: true, tlsOnly: true, publicEndpoint: false, loggingEnabled: true, owner: '', costCenter: '', authMethod: 'managed-identity' };
+const BLANK = { template: 'azure-dev-environment', program: 'card-program', partnerName: '', contractRef: '', intentAuditTrail: true, projectName: '', dataClass: 'internal', region: 'eastus2', encryptionAtRest: true, tlsOnly: true, publicEndpoint: false, loggingEnabled: true, owner: '', costCenter: '', authMethod: 'managed-identity' };
 
 const Pill = ({ v }) => <span className={'pill ' + v}>{v}</span>;
 const Stack = () => <div className="stack">{STACK.map((s) => <span key={s}>{s}</span>)}{GH.map((s) => <span key={s} className="gh">{s}</span>)}</div>;
 
 export default function App() {
-  const [role, setRole] = useState(null);
+  const [path, setPath] = useState(window.location.pathname + window.location.search);
+  const go = (p) => { window.history.pushState({}, '', p); setPath(p); window.scrollTo(0, 0); };
+  useEffect(() => { const f = () => setPath(window.location.pathname + window.location.search); window.addEventListener('popstate', f); return () => window.removeEventListener('popstate', f); }, []);
+  const initialRole = new URLSearchParams(window.location.search).get('role');
+  const [role, setRole] = useState(initialRole && ROLES[initialRole] ? initialRole : null);
   const [form, setForm] = useState(BLANK);
   const [list, setList] = useState([]);
   const [sel, setSel] = useState(null);
@@ -40,8 +45,8 @@ export default function App() {
   const Landing = () => (
     <>
       <section>
-        <h2>Getting a new cloud environment at Mastercard takes 6–8 months and about 12 handoffs. It should take one request.</h2>
-        <p className="lead">LaunchGate is a policy-aware deployment control plane. The rules are written down as code, an AI agent prepares the evidence, the people who must approve approve in one place, and nothing deploys without a human. Pick how you work:</p>
+        <h2>Pick how you work</h2>
+        <p className="lead">Each role sees the same request from its own side: plain questions for a business owner, rule results for an engineer, an evidence pack for reviewers, impact for an executive.</p>
         <div className="cards">{Object.entries(ROLES).map(([k, r]) => <div className="card" key={k} onClick={() => setRole(k)}><b>{r.title}</b><span>{r.blurb}</span><em>{r.cta} →</em></div>)}</div>
       </section>
       <section><h3>Built on Microsoft Azure and GitHub</h3><Stack /></section>
@@ -50,11 +55,15 @@ export default function App() {
 
   const OwnerForm = () => (
     <section>
-      <h2>Tell us about the project in plain language</h2>
-      <p className="lead">Answer five questions. LaunchGate fills in the secure defaults, checks the rules, and tells you who has to approve and how long it should take.</p>
-      <div className="scen">Try an example: <button onClick={() => loadScenario('compliant')}>partner loyalty API</button><button onClick={() => loadScenario('approved')}>merchant onboarding (customer data)</button><button onClick={() => loadScenario('blocked')}>cardholder insights (misconfigured)</button></div>
+      <h2>Tell us about the program in plain language</h2>
+      <p className="lead">Answer a few questions. LaunchGate fills in the secure defaults, checks the rules, and tells you who has to approve and how long it should take.</p>
+      <div className="scen">Try an example: <button onClick={() => loadScenario('approved')}>fintech card program</button><button onClick={() => loadScenario('agentpay')}>Agent Pay airline integration</button><button onClick={() => loadScenario('compliant')}>internal service</button><button onClick={() => loadScenario('blocked')}>misconfigured program</button></div>
       <div className="grid">
-        <label>What are you building?<input placeholder="e.g. partner-loyalty-api" value={form.projectName} onChange={(e) => set('projectName', e.target.value)} /></label>
+        <label>What kind of program?<select value={form.program} onChange={(e) => set('program', e.target.value)}><option value="card-program">Partner card program (fintech, co-brand)</option><option value="agent-pay">Agent Pay integration (agentic commerce)</option><option value="internal-service">Internal service</option></select></label>
+        <label>What are you building?<input placeholder="e.g. northbridge-card-launch" value={form.projectName} onChange={(e) => set('projectName', e.target.value)} /></label>
+        {form.program !== 'internal-service' && <label>Which partner?<input placeholder="partner name" value={form.partnerName} onChange={(e) => set('partnerName', e.target.value)} /></label>}
+        {form.program !== 'internal-service' && <label>Contract or due-diligence reference<input placeholder="e.g. MSA-2026-0388" value={form.contractRef} onChange={(e) => set('contractRef', e.target.value)} /></label>}
+        {form.program === 'agent-pay' && <label className="chk"><input type="checkbox" checked={form.intentAuditTrail} onChange={(e) => set('intentAuditTrail', e.target.checked)} /> Verifiable Intent audit trail enabled for agent transactions</label>}
         <label>Does it touch customer or card data?<select value={form.dataClass} onChange={(e) => set('dataClass', e.target.value)}><option value="internal">No, internal data only</option><option value="confidential">Customer data (confidential)</option><option value="restricted">Cardholder data (restricted)</option></select></label>
         <label>Who is accountable for it?<input placeholder="business owner" value={form.owner} onChange={(e) => set('owner', e.target.value)} /></label>
         <label>Which budget pays for it?<input placeholder="cost center, e.g. CC-4410" value={form.costCenter} onChange={(e) => set('costCenter', e.target.value)} /></label>
@@ -69,59 +78,76 @@ export default function App() {
   const EngineerForm = () => (
     <section>
       <h2>Technical request</h2>
-      <div className="scen">Load scenario: <button onClick={() => loadScenario('compliant')}>compliant</button><button onClick={() => loadScenario('blocked')}>blocked</button><button onClick={() => loadScenario('approved')}>needs security approval</button></div>
+      <div className="scen">Load scenario: <button onClick={() => loadScenario('agentpay')}>agent pay</button><button onClick={() => loadScenario('compliant')}>compliant</button><button onClick={() => loadScenario('blocked')}>blocked</button><button onClick={() => loadScenario('approved')}>needs security approval</button></div>
       <div className="grid">
+        <label>Program<select value={form.program} onChange={(e) => set('program', e.target.value)}><option>card-program</option><option>agent-pay</option><option>internal-service</option></select></label>
         <label>Project name<input value={form.projectName} onChange={(e) => set('projectName', e.target.value)} /></label>
+        <label>Partner<input value={form.partnerName} onChange={(e) => set('partnerName', e.target.value)} /></label>
+        <label>Contract ref<input value={form.contractRef} onChange={(e) => set('contractRef', e.target.value)} /></label>
         <label>Data classification<select value={form.dataClass} onChange={(e) => set('dataClass', e.target.value)}><option>internal</option><option>confidential</option><option>restricted</option></select></label>
         <label>Region<select value={form.region} onChange={(e) => set('region', e.target.value)}><option>eastus</option><option>eastus2</option><option>centralus</option><option>westeurope</option></select></label>
         <label>Auth method<select value={form.authMethod} onChange={(e) => set('authMethod', e.target.value)}><option>managed-identity</option><option>connection-string</option></select></label>
         <label>Business owner<input value={form.owner} onChange={(e) => set('owner', e.target.value)} /></label>
         <label>Cost center<input value={form.costCenter} onChange={(e) => set('costCenter', e.target.value)} /></label>
-        {['encryptionAtRest', 'tlsOnly', 'publicEndpoint', 'loggingEnabled'].map((k) => <label key={k} className="chk"><input type="checkbox" checked={form[k]} onChange={(e) => set(k, e.target.checked)} /> {k}</label>)}
+        {[['encryptionAtRest', 'Encrypt data at rest'], ['tlsOnly', 'TLS only (no plain HTTP)'], ['publicEndpoint', 'Public internet endpoint'], ['loggingEnabled', 'Diagnostic logging'], ['intentAuditTrail', 'Verifiable Intent audit trail (Agent Pay)']].map(([k, l]) => <label key={k} className="chk"><input type="checkbox" checked={!!form[k]} onChange={(e) => set(k, e.target.checked)} /> {l}</label>)}
       </div>
       <button className="primary" onClick={submit}>Submit request</button>
     </section>
   );
 
+  const FIXES = { 'GG-001': { encryptionAtRest: true }, 'GG-002': { tlsOnly: true }, 'GG-003': { region: 'eastus2' }, 'GG-004': { publicEndpoint: false }, 'GG-005': { loggingEnabled: true }, 'GG-007': { authMethod: 'managed-identity' }, 'GG-009': { intentAuditTrail: true } };
+  const [tab, setTab] = useState('fix');
   const Outcome = ({ q }) => {
     const m = q.evaluation.model;
+    const failed = q.evaluation.results.filter((r) => r.status === 'fail');
+    const steps = [['Submitted', true], ['Rules checked', true], ['Approvals', q.status === 'approved' || q.status === 'deployed'], ['Deployed', q.status === 'deployed']];
+    const waiting = q.evaluation.requiredApprovers.filter((a) => !q.approvals[a]);
+    const next = q.status === 'blocked' ? `Fix ${failed.length} rule${failed.length > 1 ? 's' : ''} and resubmit` : q.status === 'awaiting-approval' ? `Waiting on ${waiting.join(' and ')}` : q.status === 'approved' ? 'Ready to deploy' : q.status === 'deployed' ? 'Done' : 'Sent back, needs changes';
+    const canFix = role === 'owner' || role === 'engineer';
+    const applyFixes = () => { const patch = {}; failed.forEach((f) => Object.assign(patch, FIXES[f.id] || {})); const { id, createdAt, requester, approvals, audit, evaluation, status, deployment, version, hasCode, ...rest } = q; const fixed = { ...rest, ...patch }; if (failed.some((f) => f.id === 'GG-006')) { fixed.owner = fixed.owner || 'maria.bd'; fixed.costCenter = fixed.costCenter || 'CC-4410'; } if (failed.some((f) => f.id === 'GG-010')) { fixed.partnerName = fixed.partnerName || 'Northbridge Fintech'; fixed.contractRef = fixed.contractRef || 'MSA-2026-0388'; } setForm(fixed); run(async () => { const r = await c.create(fixed); setAnswer(null); setTab('fix'); await refresh(r.id); }); };
+    const tabs = [['fix', q.status === 'blocked' ? `What to fix (${failed.length})` : 'Summary'], ['rules', `Rules (${q.evaluation.results.length})`], ['handoffs', `Handoffs (${m.handoffs.length})`], ['audit', `Audit (${(q.audit || audit).length})`]];
     return (
-      <section>
-        <h2>{q.id} · {q.projectName} <Pill v={q.status} /></h2>
-        <div className="compare">
-          <div className="today"><h4>Today at Mastercard</h4><big>12 handoffs</big><small>6–8 months to a usable environment (as reported in Discovery)</small></div>
-          <div className="after"><h4>With LaunchGate</h4><big>1 request + {m.summary.human} human {m.summary.human === 1 ? 'approval' : 'approvals'}</big><small>{m.summary.automated} steps automated, {m.summary.merged} merged into the request. Risk tier: {m.tierLabel.toLowerCase()}, typical turnaround {m.todaySla}.</small></div>
+      <section className="req">
+        <div className="reqhead">
+          <div><h2>{q.projectName} <span className="muted">{q.id} · {q.program}{q.partnerName ? ' · ' + q.partnerName : ''}</span></h2><div className="next"><Pill v={q.status} /> <b>Next:</b> {next}</div></div>
+          <div className="stepper">{steps.map(([n, done], i) => <div key={n} className={'step ' + (done ? 'done' : '')}><i>{done ? '✓' : i + 1}</i><span>{n}</span></div>)}</div>
         </div>
-        <h3>Readiness model (deterministic, auditable)</h3>
-        <div className="score"><b>Risk {m.riskScore}/100</b><div className="gauge"><i style={{ width: m.riskScore + '%' }} /></div><Pill v={m.tier} /></div>
-        <p className="muted">{m.factors.filter((f) => f.points > 0).map((f) => `${f.factor} +${f.points} (${f.because})`).join(' · ') || 'No risk factors raised.'} Must approve: <b>{q.evaluation.requiredApprovers.join(', ')}</b>.</p>
-        {q.status === 'blocked' && <p className="err">Blocked by policy: {q.evaluation.failed.join(', ')}. Fix these and resubmit; nobody has to be emailed.</p>}
-        {role === 'owner' ? (
-          <><h3>What has to be true before it is approved</h3><ul className="audit">{q.evaluation.results.filter((r) => r.status !== 'skipped').map((r) => <li key={r.id}><Pill v={r.status} /> {r.name}{r.fix ? ` · ${r.fix}` : ''}</li>)}</ul></>
-        ) : (
-          <><h3>Rule results with the controls they cite</h3>
-          <table><thead><tr><th>Rule</th><th>Result</th><th>Controls cited</th><th>Fix</th></tr></thead><tbody>
-            {q.evaluation.results.map((r) => <tr key={r.id}><td>{r.id} {r.name}</td><td><Pill v={r.status} /></td><td>{r.controls.join('; ')}</td><td>{r.fix || ''}</td></tr>)}
-          </tbody></table></>
-        )}
-        <h3>Compliance this request is held to</h3>
-        <div className="stack">{m.compliance.map((f) => <span key={f.id} title={f.why}>{f.id}</span>)}</div>
-        <div className="row">
-          {q.status === 'awaiting-approval' && R.api !== 'requester' && R.api !== 'viewer' && q.evaluation.requiredApprovers.includes(R.api) && !q.approvals[R.api] && <>
-            <button className="primary" onClick={() => run(async () => { await c.approve(q.id, 'approve', 'reviewed evidence pack'); await refresh(q.id); })}>Approve as {R.title}</button>
-            <button onClick={() => run(async () => { await c.approve(q.id, 'reject', 'needs changes'); await refresh(q.id); })}>Send back</button></>}
-          {q.status === 'approved' && R.api === 'platform' && <button className="primary" onClick={() => run(async () => { await c.deploy(q.id); await refresh(q.id); })}>Deploy to Azure (simulated)</button>}
-          {q.deployment && <span className="ok">Deployed (simulated) to {q.deployment.resourceGroup} in {q.deployment.region} from the Copilot-drafted Bicep template.</span>}
+        <div className="compare slim">
+          <div className="today"><h4>Today at Mastercard</h4><big>12 handoffs</big><small>6 to 8 months (reported)</small></div>
+          <div className="after"><h4>With LaunchGate</h4><big>1 request + {m.summary.human} human {m.summary.human === 1 ? 'approval' : 'approvals'}</big><small>{m.summary.automated} automated, {m.summary.merged} merged. Risk {m.riskScore}/100, {m.tierLabel.toLowerCase()}. Typical turnaround {m.todaySla}.</small></div>
         </div>
-        <h3>Ask the Azure AI Foundry agent (read-only, it never approves)</h3>
-        <div className="row"><input className="wide" value={question} onChange={(e) => setQuestion(e.target.value)} /><button onClick={() => run(async () => setAnswer(await c.explain(q.id, question)))}>Ask</button></div>
-        {answer && <div className="answer"><b>{answer.source}</b><p>{answer.answer}</p></div>}
-        <h3>The 12 handoffs, and what happened to each</h3>
-        <table><thead><tr><th>#</th><th>Handoff today</th><th>With LaunchGate</th><th></th></tr></thead><tbody>
+        <div className="tabs">{tabs.map(([k, l]) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
+
+        {tab === 'fix' && <div>
+          {q.status === 'blocked' && <>
+            <div className="row between"><p className="err slim">Blocked by {failed.length} rule{failed.length > 1 ? 's' : ''}. Nobody was emailed. Fix and resubmit.</p>{canFix && <button className="primary" onClick={applyFixes}>Apply all fixes and resubmit</button>}</div>
+            <div className="fixes">{failed.map((f) => <div className="fixcard" key={f.id}><div><b>{f.id} · {f.name}</b><span>{f.fix}</span><small>{f.controls.join(' · ')}</small></div>{canFix && FIXES[f.id] && <button onClick={() => { setForm({ ...form, ...FIXES[f.id] }); }}>Fix in form</button>}</div>)}</div>
+          </>}
+          {q.status !== 'blocked' && <div className="okbox"><b>All {q.evaluation.results.filter((r) => r.status !== 'skipped').length} checks passed.</b> Must approve: {q.evaluation.requiredApprovers.map((a) => <span key={a} className={'pill ' + (q.approvals[a]?.decision === 'approve' ? 'approved' : 'awaiting-approval')}>{a}: {q.approvals[a]?.decision || 'waiting'}</span>)}</div>}
+          <p className="promise">{m.promise}</p>
+          <div className="row">
+            {q.status === 'awaiting-approval' && R.api !== 'requester' && R.api !== 'viewer' && q.evaluation.requiredApprovers.includes(R.api) && !q.approvals[R.api] && <>
+              <button className="primary" onClick={() => run(async () => { await c.approve(q.id, 'approve', 'reviewed evidence pack'); await refresh(q.id); })}>Approve as {R.title}</button>
+              <button onClick={() => run(async () => { await c.approve(q.id, 'reject', 'needs changes'); await refresh(q.id); })}>Send back</button></>}
+            {q.status === 'approved' && R.api === 'platform' && <button className="primary" onClick={() => run(async () => { await c.deploy(q.id); await refresh(q.id); })}>Deploy to Azure (simulated)</button>}
+            {q.deployment && <span className="ok">Deployed (simulated) to {q.deployment.resourceGroup} in {q.deployment.region} from the Copilot-drafted Bicep template.</span>}
+            {canFix && <button onClick={() => { const { id, createdAt, requester, approvals, audit, evaluation, status, deployment, version, hasCode, ...rest } = q; setForm({ ...rest, projectName: rest.projectName + '-2' }); window.scrollTo(0, 0); }}>Clone for a new partner</button>}
+          </div>
+          <h3>Ask the Azure AI Foundry agent (read-only)</h3>
+          <div className="row"><input className="wide" value={question} onChange={(e) => setQuestion(e.target.value)} /><button onClick={() => run(async () => setAnswer(await c.explain(q.id, question)))}>Ask</button></div>
+          {answer && <div className="answer"><b>{answer.source}</b><p>{answer.answer}</p></div>}
+          <div className="stack small">{m.compliance.map((f) => <span key={f.id} title={f.why}>{f.id}</span>)}</div>
+        </div>}
+
+        {tab === 'rules' && <table><thead><tr><th>Rule</th><th>Result</th><th>Controls cited</th><th>Fix</th></tr></thead><tbody>
+          {q.evaluation.results.map((r) => <tr key={r.id}><td>{r.id} {r.name}</td><td><Pill v={r.status} /></td><td>{r.controls.join('; ')}</td><td>{r.fix || ''}</td></tr>)}
+        </tbody></table>}
+
+        {tab === 'handoffs' && <table><thead><tr><th>#</th><th>Handoff today</th><th>With LaunchGate</th><th></th></tr></thead><tbody>
           {m.handoffs.map((h) => <tr key={h.n}><td>{h.n}</td><td><b>{h.name}</b><br /><span className="muted">{h.today}</span></td><td>{h.with}</td><td><Pill v={h.mode} /></td></tr>)}
-        </tbody></table>
-        <h3>Audit log</h3>
-        <ul className="audit">{audit.map((e, i) => <li key={i}><code>{e.ts}</code> <b>{e.actor}</b> {e.action} <span>{JSON.stringify(e.detail)}</span></li>)}</ul>
+        </tbody></table>}
+
+        {tab === 'audit' && <ul className="audit">{(q.audit || audit).map((e, i) => <li key={i}><code>{e.ts}</code> <b>{e.actor}</b> {e.action} <span>{JSON.stringify(e.detail)}</span></li>)}</ul>}
       </section>
     );
   };
@@ -133,7 +159,7 @@ export default function App() {
         <h2>{title}</h2><p className="lead">{lead}</p>
         {rows.length === 0 ? <p className="muted">Nothing waiting. Submit a request as a business owner or engineer first.</p> :
         <table><thead><tr><th>ID</th><th>Project</th><th>Data</th><th>Risk</th><th>Status</th><th>Approvals</th></tr></thead><tbody>
-          {rows.map((q) => <tr key={q.id} className={'click ' + (sel?.id === q.id ? 'on' : '')} onClick={() => refresh(q.id)}><td>{q.id}</td><td>{q.projectName}</td><td>{q.dataClass}</td><td><Pill v={q.evaluation.model.tier} /></td><td><Pill v={q.status} /></td><td>{q.evaluation.requiredApprovers.map((a) => `${a}: ${q.approvals[a]?.decision || 'waiting'}`).join(' · ')}</td></tr>)}
+          {rows.map((q) => <tr key={q.id} className={'click ' + (sel?.id === q.id ? 'on' : '')} onClick={() => refresh(q.id)}><td>{q.id}</td><td>{q.projectName}<br /><span className="muted">{q.program}{q.partnerName ? ' · ' + q.partnerName : ''}</span></td><td>{q.dataClass}</td><td><Pill v={q.evaluation.model.tier} /></td><td><Pill v={q.status} /></td><td>{q.evaluation.requiredApprovers.map((a) => `${a}: ${q.approvals[a]?.decision || 'waiting'}`).join(' · ')}</td></tr>)}
         </tbody></table>}
       </section>
     );
@@ -167,10 +193,11 @@ export default function App() {
     </>
   );
 
+  if (!path.startsWith('/demo')) return <Home go={(p) => { go(p); const r = new URLSearchParams(p.split('?')[1] || '').get('role'); setRole(r && ROLES[r] ? r : null); }} />;
   return (
     <div className="app">
       <header>
-        <div className="logo" onClick={() => { setRole(null); setSel(null); }}><div className="mark"><i /><i /></div><h1>LaunchGate</h1></div>
+        <div className="logo" onClick={() => { setRole(null); setSel(null); go('/'); }}><div className="mark"><i /><i /></div><h1>LaunchGate</h1></div>
         <span className="sub">Team Garden State for Mastercard · built on Microsoft Azure</span>
         {role && <div className="rolebar">{Object.entries(ROLES).map(([k, r]) => <button key={k} className={role === k ? 'on' : ''} onClick={() => setRole(k)}>{r.title}</button>)}</div>}
       </header>

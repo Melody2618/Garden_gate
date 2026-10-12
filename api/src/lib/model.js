@@ -51,8 +51,10 @@ function score(req) {
     if (h.n === 8 && tier.tier === 'critical') mode = 'human';
     return { ...h, mode };
   });
+  if (req.program === 'agent-pay') handoffs.push({ n: 13, name: 'Agent governance review (new)', today: 'No defined path yet; agentic programs are new', mode: tier.tier === 'low' ? 'automated' : 'human', with: 'Verifiable Intent audit trail enforced by rule GG-009; security approver confirms agent scope' });
   const humanSteps = handoffs.filter((h) => h.mode === 'human').length;
   const applicable = COMPLIANCE.filter((c) => !(c.id.startsWith('PCI') && req.dataClass === 'internal') && !(c.id.startsWith('GLBA') && req.dataClass === 'internal'));
-  return { riskScore: total, tier: tier.tier, tierLabel: tier.label, approvers: tier.approvers, todaySla: tier.sla, factors, handoffs, summary: { today: 12, automated: handoffs.filter((h) => h.mode === 'automated').length, merged: handoffs.filter((h) => h.mode === 'merged').length, human: humanSteps }, compliance: applicable };
+  const promise = req.program === 'card-program' ? 'Mastercard Product Express promises fintechs a card program in as fast as 15 days after contract. The internal path should not be the slowest part.' : req.program === 'agent-pay' ? 'Agent Pay is rolling out to every US cardholder by the holidays; partner integrations need a governed path measured in days, not quarters.' : 'Internal services inherit the same path; keep it short so partner programs do not queue behind them.';
+  return { promise, riskScore: total, tier: tier.tier, tierLabel: tier.label, approvers: tier.approvers, todaySla: tier.sla, factors, handoffs, summary: { today: 12, automated: handoffs.filter((h) => h.mode === 'automated').length, merged: handoffs.filter((h) => h.mode === 'merged').length, human: humanSteps }, compliance: applicable };
 }
 module.exports = { score, HANDOFFS, COMPLIANCE };

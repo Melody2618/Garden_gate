@@ -1,0 +1,17 @@
+{
+ "template": "azure-dev-environment",
+ "program": "agent-pay",
+ "projectName": "agent-pay-airline-checkout",
+ "partnerName": "Skyline Airlines",
+ "contractRef": "MSA-2026-0412",
+ "intentAuditTrail": true,
+ "dataClass": "confidential",
+ "region": "eastus2",
+ "encryptionAtRest": true,
+ "tlsOnly": true,
+ "publicEndpoint": false,
+ "loggingEnabled": true,
+ "owner": "maria.bd",
+ "costCenter": "CC-4410",
+ "authMethod": "managed-identity"
+}

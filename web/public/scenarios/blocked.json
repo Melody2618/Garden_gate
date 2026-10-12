@@ -1,1 +1,16 @@
-{"template":"azure-dev-environment","projectName":"cardholder-insights","dataClass":"restricted","region":"westeurope","encryptionAtRest":true,"tlsOnly":false,"publicEndpoint":true,"loggingEnabled":true,"owner":"maria.bd","costCenter":"","authMethod":"connection-string"}
+{
+ "template": "azure-dev-environment",
+ "projectName": "cardholder-insights",
+ "dataClass": "restricted",
+ "region": "westeurope",
+ "encryptionAtRest": true,
+ "tlsOnly": false,
+ "publicEndpoint": true,
+ "loggingEnabled": true,
+ "owner": "maria.bd",
+ "costCenter": "",
+ "authMethod": "connection-string",
+ "program": "card-program",
+ "partnerName": "",
+ "contractRef": ""
+}

@@ -1,1 +1,14 @@
-{"template":"azure-dev-environment","projectName":"partner-loyalty-api","dataClass":"internal","region":"eastus2","encryptionAtRest":true,"tlsOnly":true,"publicEndpoint":false,"loggingEnabled":true,"owner":"maria.bd","costCenter":"CC-4410","authMethod":"managed-identity"}
+{
+ "template": "azure-dev-environment",
+ "projectName": "partner-loyalty-api",
+ "dataClass": "internal",
+ "region": "eastus2",
+ "encryptionAtRest": true,
+ "tlsOnly": true,
+ "publicEndpoint": false,
+ "loggingEnabled": true,
+ "owner": "maria.bd",
+ "costCenter": "CC-4410",
+ "authMethod": "managed-identity",
+ "program": "internal-service"
+}

@@ -5,7 +5,7 @@ const { memoryStore } = require('../src/lib/rag/store');
 const rag = require('../src/lib/rag');
 const { RULES, evaluate } = require('../src/lib/engine');
 
-const DIM = 64;
+const DIM = 512; // wide enough that the fake embedder's word hashes don't collide across rules
 const embed = async (texts) => texts.map((t) => { const v = new Array(DIM).fill(0); t.toLowerCase().split(/\W+/).filter(Boolean).forEach((w) => { let h = 0; for (const c of w) h = (h * 31 + c.charCodeAt(0)) % DIM; v[h]++; }); const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1; return v.map((x) => x / n); });
 
 (async () => {

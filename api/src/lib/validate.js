@@ -17,7 +17,15 @@ const FIELDS = {
   costCenter: (v) => typeof v === 'string' && v.length <= 40,
   authMethod: (v) => ['managed-identity', 'connection-string'].includes(v),
 };
-const OPTIONAL = { code: (v) => v === undefined || (typeof v === 'string' && v.length <= MAX_CODE) };
+const opt = (check) => (v) => v === undefined || check(v);
+// Partner-program fields (rules GG-009, GG-010). Optional: internal services leave them out.
+const OPTIONAL = {
+  code: opt((v) => typeof v === 'string' && v.length <= MAX_CODE),
+  program: opt((v) => ['internal-service', 'card-program', 'agent-pay'].includes(v)),
+  partnerName: opt((v) => typeof v === 'string' && v.length <= 80),
+  contractRef: opt((v) => typeof v === 'string' && v.length <= 40),
+  intentAuditTrail: opt((v) => typeof v === 'boolean'),
+};
 const HINT = { projectName: '3-40 chars, lowercase letters, digits and dashes', code: `string up to ${MAX_CODE} characters` };
 
 const bad = (message) => fail(400, message);
@@ -31,7 +39,7 @@ function validateForm(form) {
   }
   const out = {};
   for (const k of Object.keys(FIELDS)) out[k] = typeof form[k] === 'string' ? form[k].trim() : form[k];
-  if (form.code !== undefined) out.code = form.code;
+  for (const k of Object.keys(OPTIONAL)) if (form[k] !== undefined) out[k] = k === 'code' || typeof form[k] !== 'string' ? form[k] : form[k].trim();
   return out;
 }
 
