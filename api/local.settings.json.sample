@@ -1,1 +1,16 @@
-{ "IsEncrypted": false, "Values": { "FUNCTIONS_WORKER_RUNTIME": "node", "FOUNDRY_PROJECT_ENDPOINT": "https://<your-foundry-resource>.services.ai.azure.com/api/projects/<project>", "FOUNDRY_AGENT_ID": "asst_xxx", "FOUNDRY_MODEL": "Phi-4" } }
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "LAUNCHGATE_SECRET": "",
+    "DEMO_PASSWORD": "launchgate-demo",
+    "SUPABASE_URL": "",
+    "SUPABASE_SERVICE_KEY": "",
+    "RAG_ENABLED": "on",
+    "OLLAMA_URL": "http://localhost:11434",
+    "RAG_LLM_MODEL": "llama3.2",
+    "FOUNDRY_PROJECT_ENDPOINT": "",
+    "FOUNDRY_AGENT_ID": "",
+    "FOUNDRY_MODEL": "Phi-4"
+  }
+}

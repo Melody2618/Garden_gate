@@ -1,11 +1,20 @@
 // Local dev server on plain Node (no Core Tools needed): POST http://localhost:7071/api/gate/{op}
+// Loads api/local.settings.json "Values" into the environment, like `func start` does, so secrets stay out of code.
+const fs = require('fs');
+const path = require('path');
+try { Object.assign(process.env, { ...JSON.parse(fs.readFileSync(path.join(__dirname, 'local.settings.json'), 'utf8')).Values, ...process.env }); } catch {}
 const http = require('http');
 const { handle } = require('./src/lib/core');
+const MAX_BODY = 64 * 1024;
 http.createServer((q, s) => {
-  let body = ''; q.on('data', (c) => (body += c));
+  let body = ''; let tooBig = false;
+  q.on('data', (c) => { body += c; if (body.length > MAX_BODY) { tooBig = true; q.destroy(); } });
   q.on('end', async () => {
+    const send = (status, obj) => { s.writeHead(status, { 'content-type': 'application/json' }); s.end(JSON.stringify(obj)); };
+    if (tooBig) return;
     const op = q.url.replace(/^\/api\/gate\//, '').split('?')[0];
-    try { const out = await handle(op, body ? JSON.parse(body) : {}, { 'x-user': q.headers['x-user'], 'x-role': q.headers['x-role'] }); s.writeHead(out.status, { 'content-type': 'application/json' }); s.end(JSON.stringify(out.body)); }
-    catch (e) { s.writeHead(e.status || 500, { 'content-type': 'application/json' }); s.end(JSON.stringify({ error: e.message })); }
+    let parsed; try { parsed = body ? JSON.parse(body) : {}; } catch { return send(400, { error: 'invalid JSON' }); }
+    try { const out = await handle(op, parsed, { authorization: q.headers.authorization }); send(out.status, out.body); }
+    catch (e) { if (!e.status) console.error(e); send(e.status || 500, { error: e.status ? e.message : 'internal error' }); }
   });
-}).listen(7071, () => console.log('LaunchGate API on http://localhost:7071'));
+}).listen(7071, '127.0.0.1', () => console.log('LaunchGate API on http://localhost:7071'));

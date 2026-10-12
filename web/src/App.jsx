@@ -29,7 +29,7 @@ export default function App() {
   const R = role ? ROLES[role] : null;
   const c = api(R?.user || 'anon', R?.api || 'viewer');
 
-  const refresh = async (id) => { setList(await c.list()); setMetrics(await c.metrics()); if (id) { setSel(await c.get(id)); setAudit(await c.audit(id)); } };
+  const refresh = async (id) => { if (!R) return; setList(await c.list()); setMetrics(await c.metrics()); if (id) { setSel(await c.get(id)); setAudit(await c.audit(id)); } };
   useEffect(() => { refresh().catch(() => {}); }, []);
   useEffect(() => { refresh(sel?.id).catch(() => {}); }, [role]);
   const run = (fn) => fn().then(() => setErr('')).catch((e) => setErr(e.message));
