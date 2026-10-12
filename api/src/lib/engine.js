@@ -1,6 +1,7 @@
 // Deterministic rule engine. Same input always gives the same result. No AI here.
 const fs = require('fs');
 const path = require('path');
+const { score } = require('./model');
 const RULES = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'rules', 'rules.json'), 'utf8'));
 
 function applies(rule, req) {
@@ -19,10 +20,10 @@ function evaluate(req) {
     return { id: rule.id, name: rule.name, status: pass ? 'pass' : 'fail', severity: rule.severity, controls: rule.controls, fix: pass ? undefined : rule.fix };
   });
   const failed = results.filter((r) => r.status === 'fail');
-  const approvers = new Set(['platform']);
+  const model = score(req);
+  const approvers = new Set(model.approvers);
   results.filter((r) => r.status === 'approval-required').forEach((r) => approvers.add(r.approver));
-  if (req.dataClass === 'confidential') approvers.add('security');
-  return { verdict: failed.length ? 'blocked' : 'compliant', results, failed: failed.map((f) => f.id), requiredApprovers: [...approvers] };
+  return { verdict: failed.length ? 'blocked' : 'compliant', results, failed: failed.map((f) => f.id), requiredApprovers: [...approvers], model };
 }
 
 module.exports = { evaluate, RULES };
