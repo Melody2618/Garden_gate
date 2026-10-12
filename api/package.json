@@ -1,0 +1,2 @@
+{ "name": "launchgate-api", "version": "0.1.0", "main": "src/functions/*.js", "scripts": { "start": "func start", "test": "node test/engine.test.js" },
+  "dependencies": { "@azure/functions": "^4.5.0", "@azure/ai-projects": "^1.0.0", "@azure/identity": "^4.4.0" } }

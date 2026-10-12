@@ -1,2 +1,57 @@
-# Garden_gate
-A RAG agent powered platform to automate handoffs for code additions. 
+# LaunchGate — Team Garden State × Mastercard (LEAD ASPIRE 2026)
+
+Policy-aware deployment control plane. One request replaces ~12 handoffs. Deterministic rules decide, humans approve, an Azure AI Foundry agent explains, nothing deploys without a human.
+
+**Stack:** Azure Static Web Apps (React portal in `web/`) + managed Azure Functions API (`api/`, Node) + Azure AI Foundry agent (`agent/`) + Bicep (`infra/`). Built with GitHub Copilot / Claude.
+
+## Run it locally (5 min)
+```bash
+npm install --prefix web && npm install --prefix api
+npm test --prefix api                      # rule engine: 3 scenarios pass
+npm install -g @azure/static-web-apps-cli azure-functions-core-tools@4
+swa start                                   # portal http://localhost:4280 (web on 5173 + api on 7071)
+```
+No Foundry yet? The explainer falls back to a deterministic answer, so the whole demo works offline.
+
+## Demo path (what we show, 5 min)
+1. Engineer loads **compliant** scenario → Submit → all 8 rules pass → `awaiting-approval` (platform only).
+2. Load **blocked** → Submit → 5 rules fail, each names its control (PCI DSS 4.0.1 / NIST 800-53 / CIS Azure / Azure Policy) and a fix → ask the Foundry agent "why is it blocked?".
+3. Load **needs security approval** (confidential data) → switch role to *Security approver* → Approve → switch to *Platform approver* → Approve → `approved` → **Deploy (simulated Azure)** from the Copilot-drafted Bicep template → audit log + metrics tiles (12 handoffs → 1).
+Also show: requester cannot approve own request (403), deploy before approval is refused (409).
+
+## Work split (2h30, everyone commits to `main` via small PRs; Claude/Copilot on each laptop)
+| Who | Owns | Files | Done when |
+|---|---|---|---|
+| **Azra** (lead/architect) | Azure + Foundry setup, SWA deploy, SOW→demo traceability, pitch | `infra/`, `agent/`, `.github/workflows`, this README | SWA live URL; `FOUNDRY_AGENT_ID` set; demo script rehearsed |
+| **Melanie** (portal) | Polish `web/`: status pills, approvals inbox view, metrics tiles, Mastercard-style look, error states | `web/src/*` | All 3 scenarios click through on `swa start` without console errors |
+| **Jayden** (API + rules) | Harden `api/`: validation, Cosmos DB persistence (optional), audit export endpoint, 2 more rules if time | `api/src/*`, `api/rules/rules.json`, `api/test` | `npm test` green; approve/deploy guards return 403/409; audit has every transition |
+| **Adrian** (AI + evidence) | Foundry agent prompt + risk-memo endpoint (`POST /requests/{id}/memo`), Bicep template params from request, Build Readiness checklist mapping | `agent/`, `api/src/lib/explain.js`, `infra/templates/` | Agent answers cite only real rule IDs; refuses off-topic; memo shown in portal |
+
+Branch naming: `melanie/portal`, `jayden/api`, `adrian/agent`, `azra/infra`. Rebase on `main` often; nobody force-pushes.
+
+## Azure setup (Azra, ~20 min)
+1. **Azure for Students** → https://azure.microsoft.com/free/students → sign in with your school account.
+2. **Resource group** `lead` (region `eastus2`).
+3. **Static Web App**: Portal → Create → Static Web App → Free → source GitHub `Melody2618/Garden_gate`, branch `main`, app location `web`, api location `api`, output `dist`. Azure adds the deploy token secret to the repo (our workflow in `.github/workflows` uses it).
+4. **Foundry** (from the starter-kit PDF): Portal → search **Foundry** → Create → resource group `lead` → name `lead-foundry` → project name `launchgate` → Review + create (2–3 min) → **Go to Foundry portal**.
+5. In Foundry: **Models + endpoints → Deploy model → `gpt-4o-mini`** (or any GPT-4.1/4o mini; keep default name). Copy the **project endpoint** from the project Overview (looks like `https://lead-foundry.services.ai.azure.com/api/projects/launchgate`).
+6. Create the agent either in **Agents → New agent** (paste `agent/instructions.md`, pick the model, copy its ID `asst_…`) or from your laptop:
+   ```bash
+   az login
+   export FOUNDRY_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project>
+   cd api && npm install && node ../agent/create-agent.mjs     # prints FOUNDRY_AGENT_ID=asst_...
+   ```
+7. Put both values in `api/local.settings.json` (copy from `.sample`) for local runs, and in the Static Web App → **Settings → Environment variables** for the live site. Your identity needs the **Azure AI User** role on the Foundry resource (Access control → Add role assignment). For the live SWA API, enable the managed identity on the Static Web App and give it the same role.
+8. Test: ask the agent in the portal; the answer source changes from `deterministic` to `foundry`.
+
+## Security & governance (maps to the starter-kit review)
+Identity: roles from headers in the prototype, Entra ID via SWA auth in pilot; separation of duties enforced in `api/src/functions/requests.js`. Secrets: none in code, Foundry via `DefaultAzureCredential`. Data: synthetic requests only, no personal data. Logging: append-only audit, no secrets logged. AI: read-only agent, cites rule IDs only, deterministic fallback. Governance: rules in `api/rules/rules.json` cite public controls; Mastercard's catalogue replaces them in a pilot.
+
+## Customer concern → solution mapping (Build Readiness checklist)
+| # | Concern (Discovery) | Where it is addressed |
+|---|---|---|
+| 1 | 6–8 months, ~12 handoffs, ideal 1 | One request; metrics tile 12 → 1; audit counts transitions |
+| 2 | "Deployment is not enough: policy and orchestration" | Rule engine + workflow states submitted → blocked / awaiting-approval → approved → deployed |
+| 3 | Guardrails cannot be bypassed | Only `approved` can deploy (409); blocked requests cannot be approved |
+| 4 | Human review is important | Role-based approvals; AI agent is read-only |
+| 5 | Redo when someone leaves | Rules and workflow are code in this repo; audit log is the record |

@@ -1,0 +1,249 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LaunchGate Opportunity Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: a whiteboard. Two rows of four framed panels, then a full-width Executive Solution Map strip that can be screenshotted alone. */
+:root{
+  --board:#f3f1ea; --paper:#fbfaf6; --ink:#1f2430; --ink-2:#5a6070; --line:#cfd3dc;
+  --frame-1:#dbe8f6; --frame-2:#f8dde3; --frame-3:#dcefe3; --frame-4:#e6e0f3;
+  --frame-5:#fbf0cf; --frame-6:#dde6f8; --frame-7:#dff0e8; --frame-8:#fbe3d4;
+  --sticky-y:#fff2a8; --sticky-p:#ffc9d6; --sticky-b:#bfe0ff; --sticky-g:#c9f0c2;
+  --tag-e:#1b6b3a; --tag-h:#8a5a00; --tag-u:#8b2f3a; --accent:#1c3f7a; --map:#e9f1fb;
+  --font-hand:"Caveat","Segoe Print","Bradley Hand",cursive;
+  --font-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --board:#1b1e26; --paper:#242833; --ink:#eceef3; --ink-2:#aeb4c2; --line:#3a4050;
+  --frame-1:#23324a; --frame-2:#43293a; --frame-3:#233b2f; --frame-4:#33304a;
+  --frame-5:#443d25; --frame-6:#273449; --frame-7:#243a31; --frame-8:#45332a;
+  --sticky-y:#e5d36a; --sticky-p:#e8a2b4; --sticky-b:#8fc4f0; --sticky-g:#a6dc9c;
+  --tag-e:#7bd39a; --tag-h:#f0c468; --tag-u:#f09aa6; --accent:#9dc0f3; --map:#223047; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --board:#1b1e26; --paper:#242833; --ink:#eceef3; --ink-2:#aeb4c2; --line:#3a4050;
+  --frame-1:#23324a; --frame-2:#43293a; --frame-3:#233b2f; --frame-4:#33304a;
+  --frame-5:#443d25; --frame-6:#273449; --frame-7:#243a31; --frame-8:#45332a;
+  --sticky-y:#e5d36a; --sticky-p:#e8a2b4; --sticky-b:#8fc4f0; --sticky-g:#a6dc9c;
+  --tag-e:#7bd39a; --tag-h:#f0c468; --tag-u:#f09aa6; --accent:#9dc0f3; --map:#223047; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--board);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.35;
+  padding-block:20px;padding-inline:16px;max-width:1500px;margin-inline:auto}
+h1,h2,h3{margin:0;text-wrap:balance}
+.sticky,.hand{font-family:var(--font-hand)}
+/* header */
+.hdr{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:start;margin-bottom:18px}
+.hdr .title{background:var(--ink);color:var(--board);padding:10px 18px;border-radius:4px;transform:rotate(-1deg)}
+.hdr .title h1{font-family:var(--font-hand);font-size:34px;line-height:1;font-weight:700}
+.hdr .title p{margin:4px 0 0;font-family:var(--font-hand);font-size:22px;line-height:1}
+.hdr .intro{background:var(--paper);border:1px solid var(--line);padding:12px 16px;border-radius:6px;font-size:15px}
+.hdr .intro strong{display:block;font-size:16px;margin-bottom:4px}
+.hdr .meta{background:var(--paper);border:1px solid var(--line);padding:12px 16px;border-radius:6px;min-width:260px;font-size:14px}
+.hdr .meta div{display:flex;gap:8px;border-bottom:1px dotted var(--line);padding:4px 0}
+.hdr .meta div span:first-child{font-weight:700;min-width:96px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:0 0 16px;font-size:13px;color:var(--ink-2)}
+.tag{display:inline-block;font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:1px 6px;border-radius:3px;border:1.5px solid currentColor;line-height:1.3}
+.tag.e{color:var(--tag-e)} .tag.h{color:var(--tag-h)} .tag.u{color:var(--tag-u)}
+/* panels */
+.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.panel{border:2px solid var(--line);border-radius:10px;padding:12px 12px 10px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.panel .ph{display:flex;gap:10px;align-items:flex-start}
+.panel .num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--board);font-weight:700;display:grid;place-items:center;font-size:15px}
+.panel h2{font-size:17px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.panel .q{font-family:var(--font-hand);font-size:19px;line-height:1.1;color:var(--ink-2);margin-top:2px}
+.p1{background:var(--frame-1)} .p2{background:var(--frame-2)} .p3{background:var(--frame-3)} .p4{background:var(--frame-4)}
+.p5{background:var(--frame-5)} .p6{background:var(--frame-6)} .p7{background:var(--frame-7)} .p8{background:var(--frame-8)}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.sticky{color:#1f2430;padding:9px 10px 18px;border-radius:2px;font-size:17px;line-height:1.12;box-shadow:2px 3px 0 rgba(0,0,0,.12);min-width:0;position:relative}
+.sticky .tag{position:absolute;right:5px;bottom:4px;font-size:9px;padding:0 4px;background:rgba(255,255,255,.55)}
+.sticky.y{background:var(--sticky-y)} .sticky.p{background:var(--sticky-p)} .sticky.b{background:var(--sticky-b)} .sticky.g{background:var(--sticky-g)}
+.sticky:nth-child(3n+1){transform:rotate(-1.2deg)} .sticky:nth-child(3n+2){transform:rotate(.8deg)} .sticky:nth-child(3n){transform:rotate(-.4deg)}
+.sticky q{quotes:"“" "”"}
+.foot{margin-top:auto;background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:7px 10px;font-family:var(--font-hand);font-size:18px;line-height:1.1;color:var(--ink-2)}
+/* options table */
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--paper)}
+th,td{border:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)}
+td.pick{font-weight:700;color:var(--accent)}
+.score{font-variant-numeric:tabular-nums;white-space:nowrap}
+/* matrix */
+.matrix{position:relative;height:250px;border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);margin:6px 10px 24px 54px}
+.matrix::before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed var(--line)}
+.matrix::after{content:"";position:absolute;top:50%;left:0;right:0;border-top:1px dashed var(--line)}
+.ax{position:absolute;font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em}
+.ax.y{left:-50px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:center}
+.ax.x{bottom:-20px;left:50%;transform:translateX(-50%)}
+.ax.hi{top:-2px;left:-30px;text-transform:none}.ax.lo{bottom:-2px;left:-28px;text-transform:none}
+.ax.xl{bottom:-20px;left:0;text-transform:none}.ax.xh{bottom:-20px;right:0;text-transform:none}
+.dot{position:absolute;transform:translate(-50%,-50%);padding:4px 8px;border-radius:3px;font-size:13px;font-weight:600;box-shadow:1px 2px 0 rgba(0,0,0,.15);color:#1f2430;white-space:nowrap}
+.dot.pick{outline:2.5px solid var(--accent);outline-offset:2px}
+/* journey */
+.journey{display:grid;grid-template-columns:1fr;gap:6px}
+.step{background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:7px 9px;min-width:0;display:grid;grid-template-columns:92px 1fr;gap:8px;align-items:start}
+.step b{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.step span{font-size:13px;line-height:1.25;display:block}
+/* executive map */
+.map{background:var(--map);border:2px solid var(--accent);border-radius:12px;padding:16px;margin-top:6px}
+.map .mh{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+.map .mh h2{background:var(--ink);color:var(--board);font-family:var(--font-hand);font-size:30px;font-weight:700;padding:4px 16px;border-radius:4px;transform:rotate(-.6deg)}
+.map .mh p{margin:0;font-family:var(--font-hand);font-size:21px;color:var(--ink-2)}
+.chain{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.cell{background:var(--paper);border:1.5px solid var(--line);border-radius:8px;padding:10px;min-width:0;position:relative;display:flex;flex-direction:column;gap:8px}
+.cell:not(:last-child)::after{content:"→";position:absolute;right:-13px;top:46%;font-size:22px;font-weight:700;color:var(--accent);z-index:1}
+.cell h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.cell .sticky{transform:rotate(0);font-size:16px;flex:1}
+.cell .sticky ul{margin:0;padding-left:16px}
+.cell small{font-family:var(--font-body);font-size:12px;color:var(--ink-2);line-height:1.3}
+.openq{margin-top:14px;background:var(--paper);border:1px dashed var(--ink-2);border-radius:8px;padding:10px 14px;font-size:14px}
+.openq b{font-family:var(--font-hand);font-size:20px;margin-right:8px}
+.openq ul{margin:6px 0 0;padding-left:18px;columns:2;column-gap:28px}
+.openq li{break-inside:avoid;margin-bottom:3px}
+@media (max-width:1100px){.row{grid-template-columns:repeat(2,minmax(0,1fr))}.chain{grid-template-columns:repeat(2,minmax(0,1fr))}.cell::after{display:none}.hdr{grid-template-columns:1fr}.openq ul{columns:1}}
+@media (max-width:600px){.row{grid-template-columns:1fr}.chain{grid-template-columns:1fr}.notes{grid-template-columns:1fr}.hdr .title{transform:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+
+<header class="hdr">
+  <div class="title"><h1>LEAD ASPIRE</h1><p>Opportunity Mapping Board</p></div>
+  <div class="intro"><strong>From customer insights to a clear, prioritized solution.</strong>
+    Mastercard discovery with Maria (Business Development, fintech partnerships). Every note carries a tag so the EY reviewer can tell what Mastercard said from what we inferred.</div>
+  <div class="meta"><div><span>Team</span><span>[Team Name]</span></div><div><span>Project / Client</span><span>LaunchGate · Mastercard</span></div><div><span>Date</span><span>12 Oct 2026</span></div></div>
+</header>
+<div class="legend"><span class="tag e">E · heard</span> stated by Mastercard in discovery &nbsp; <span class="tag h">H · hypothesis</span> our inference, not yet confirmed &nbsp; <span class="tag u">? · unknown</span> must be validated before build or in the pitch</div>
+
+<div class="row">
+  <section class="panel p1"><div class="ph"><div class="num">1</div><div><h2>What we heard</h2><div class="q">Customer signals from the 10-minute discovery session.</div></div></div>
+    <div class="notes">
+      <div class="sticky y"><q>Just to create a virtual machine … currently takes like 6 to 8 months.</q><span class="tag e">E</span></div>
+      <div class="sticky b"><q>Around 12 handoffs today. Ideal state is 1.</q><span class="tag e">E</span></div>
+      <div class="sticky p"><q>Deployment is not enough. It also includes policy and orchestration.</q><span class="tag e">E</span></div>
+      <div class="sticky g"><q>Security guardrails. We can't come up with an idea and just ship it.</q><span class="tag e">E</span></div>
+      <div class="sticky y"><q>Human review is also important.</q><span class="tag e">E</span></div>
+      <div class="sticky p"><q>Redo the whole process if someone leaves the company.</q><span class="tag e">E</span></div>
+      <div class="sticky b"><q>She wants a button to jump onto the development stage.</q><span class="tag e">E</span></div>
+      <div class="sticky g"><q>In the next 6 months she wants to go onto AWS.</q><span class="tag e">E</span></div>
+      <div class="sticky y"><q>Are you making money or saving money? Pick one.</q><span class="tag e">E</span></div>
+      <div class="sticky b"><q>There are a lot of external processes.</q><span class="tag e">E</span></div>
+    </div>
+    <div class="foot">Quotes are paraphrased from live notes. Confirm the 6–8 month figure and what it covers before the pitch.</div>
+  </section>
+
+  <section class="panel p2"><div class="ph"><div class="num">2</div><div><h2>Problems &amp; friction</h2><div class="q">What is slow, repeated, risky or invisible?</div></div></div>
+    <div class="notes">
+      <div class="sticky p">Months pass between an approved idea and a dev-ready environment.<span class="tag e">E</span></div>
+      <div class="sticky y">~12 sequential handoffs. Each one is a wait and a re-explanation.<span class="tag e">E</span></div>
+      <div class="sticky b">Every request re-proves compliance from scratch. Same steps, every time.<span class="tag e">E</span></div>
+      <div class="sticky g">Process knowledge lives in people. Attrition resets the process.<span class="tag e">E</span></div>
+      <div class="sticky y">Requesters cannot see what is blocking them or who owns the block.<span class="tag h">H</span></div>
+      <div class="sticky p">AWS move will repeat the pain unless the pre-deploy workflow changes.<span class="tag h">H</span></div>
+    </div>
+    <div class="foot">Problem statement: getting from "approved" to "ready to build" is a manual, serial compliance chain.</div>
+  </section>
+
+  <section class="panel p3"><div class="ph"><div class="num">3</div><div><h2>People &amp; stakeholders</h2><div class="q">Who experiences it, owns it, decides, is affected?</div></div></div>
+    <div class="notes">
+      <div class="sticky y">Maria, Business Development. Requests work, waits on delivery timelines.<span class="tag e">E</span></div>
+      <div class="sticky b">Engineers who scope and build modules (web, in-store).<span class="tag e">E</span></div>
+      <div class="sticky p">Security / compliance reviewers who enforce guardrails.<span class="tag h">H</span></div>
+      <div class="sticky g">Platform / cloud team leading the AWS move.<span class="tag h">H</span></div>
+      <div class="sticky y">Partner clients (banks, airlines) waiting on "how long to implement".<span class="tag e">E</span></div>
+      <div class="sticky b">Who owns each of the 12 handoffs? Not yet known.<span class="tag u">?</span></div>
+    </div>
+    <div class="foot">Primary user of the prototype: an internal engineer or business owner raising an environment request.</div>
+  </section>
+
+  <section class="panel p4"><div class="ph"><div class="num">4</div><div><h2>Root causes</h2><div class="q">Why is this happening? Go deeper than the symptom.</div></div></div>
+    <div class="notes">
+      <div class="sticky p">Policy is enforced by people in sequence, not encoded as checks that run every time.<span class="tag h">H</span></div>
+      <div class="sticky b">No orchestration layer joins infra code, policy and approvals. "Deployment is not enough."<span class="tag e">E</span></div>
+      <div class="sticky y">Approvals are serialised. Independent checks never run in parallel.<span class="tag h">H</span></div>
+      <div class="sticky g">No standard request template, so every request is bespoke and tribal.<span class="tag h">H</span></div>
+      <div class="sticky p">Caution is rational: regulated financial infrastructure. The fix must keep humans in control.<span class="tag e">E</span></div>
+    </div>
+    <div class="foot">5 Whys: slow → 12 handoffs → each re-proves policy → policy lives in people and separate processes → no shared, policy-aware workflow.</div>
+  </section>
+</div>
+
+<div class="row">
+  <section class="panel p5"><div class="ph"><div class="num">5</div><div><h2>Opportunities</h2><div class="q">Framed as "How might we…"</div></div></div>
+    <div class="notes">
+      <div class="sticky y">HMW turn 12 handoffs into one request plus only the approvals that must stay human?</div>
+      <div class="sticky b">HMW encode repeatable policy checks so they run automatically, identically, every time?</div>
+      <div class="sticky g">HMW show a requester at any moment what is blocking them and who can unblock it?</div>
+      <div class="sticky p">HMW keep the process in the system so a departure does not reset it?</div>
+      <div class="sticky y">HMW prepare for the AWS target without weakening a single guardrail?</div>
+    </div>
+    <div class="foot">Chosen frame: reduce coordination, not oversight. Save money, do not make money.</div>
+  </section>
+
+  <section class="panel p6"><div class="ph"><div class="num">6</div><div><h2>Possible solutions</h2><div class="q">Generate options before choosing one.</div></div></div>
+    <table>
+      <tr><th>Option</th><th>What it is</th><th>Assessment</th></tr>
+      <tr><td>A</td><td>Policy knowledge assistant (AI answers "what do I need?")</td><td>Cheap. Explains the maze, does not shorten it.</td></tr>
+      <tr><td>B</td><td>Policy linter for infrastructure code</td><td>Useful, covers one of the 12 steps.</td></tr>
+      <tr><td class="pick">C</td><td class="pick">LaunchGate on Microsoft cloud: agent-prepared evidence pack, Azure Policy-style gate, approvals in Teams, Copilot-drafted IaC behind a GitHub gate, Fabric readiness metrics</td><td class="pick">Covers the whole chain. Agents prepare, humans approve. Recommended.</td></tr>
+      <tr><td>D</td><td>Autonomous deployment agent</td><td>Conflicts with "human review is important". High risk.</td></tr>
+      <tr><td>E</td><td>Process redesign only, no tooling</td><td>Needed anyway, but knowledge still lives in people.</td></tr>
+    </table>
+    <div class="foot">Think broadly. Option C can absorb A and B as components.</div>
+  </section>
+
+  <section class="panel p7"><div class="ph"><div class="num">7</div><div><h2>Prioritize</h2><div class="q">Alignment · Impact · Feasibility (in one build day) · Risk</div></div></div>
+    <div class="matrix">
+      <span class="ax y">Impact</span><span class="ax hi">High</span><span class="ax lo">Low</span>
+      <span class="ax x">Feasibility</span><span class="ax xl">Low</span><span class="ax xh">High</span>
+      <span class="dot pick" style="left:70%;top:14%;background:var(--sticky-g)">C · LaunchGate (scoped)</span>
+      <span class="dot" style="left:27%;top:34%;background:var(--sticky-p)">D · Autonomous agent</span>
+      <span class="dot" style="left:60%;top:55%;background:var(--sticky-b)">B · Policy linter</span>
+      <span class="dot" style="left:84%;top:74%;background:var(--sticky-y)">A · Assistant</span>
+      <span class="dot" style="left:30%;top:66%;background:var(--sticky-y)">E · Process only</span>
+    </div>
+    <table><tr><th>Option</th><th class="score">Align</th><th class="score">Impact</th><th class="score">Feas.</th><th class="score">Risk</th></tr>
+      <tr><td class="pick">C LaunchGate</td><td class="score">High</td><td class="score">High</td><td class="score">Med</td><td class="score">Low</td></tr>
+      <tr><td>D Agent</td><td class="score">Low</td><td class="score">High</td><td class="score">Low</td><td class="score">High</td></tr>
+      <tr><td>B Linter</td><td class="score">Med</td><td class="score">Med</td><td class="score">High</td><td class="score">Low</td></tr>
+      <tr><td>A Assistant</td><td class="score">Med</td><td class="score">Low</td><td class="score">High</td><td class="score">Low</td></tr></table>
+  </section>
+
+  <section class="panel p8"><div class="ph"><div class="num">8</div><div><h2>Solution journey</h2><div class="q">How the user moves through the proposed experience.</div></div></div>
+    <div class="journey">
+      <div class="step"><b>1 · Request</b><span>One template on the portal; an Azure AI Foundry intake agent asks for anything missing.</span></div>
+      <div class="step"><b>2 · Validate</b><span>Deterministic Azure Policy-style rules, aligned to Defender for Cloud standards that also cover AWS. Pass or fail with the rule named.</span></div>
+      <div class="step"><b>3 · Approve</b><span>Agents draft the Terraform and risk memo; Entra-role approvers decide in Teams, in parallel.</span></div>
+      <div class="step"><b>4 · Execute</b><span>Copilot-drafted PR behind a GitHub environment protection rule; AWS provisioning simulated.</span></div>
+      <div class="step"><b>5 · Audit</b><span>Every decision logged in Cosmos DB; handoffs and wait time land in a Fabric readiness dashboard.</span></div>
+    </div>
+    <div class="foot">Agents prepare evidence and explain blockers. They never approve or deploy.</div>
+  </section>
+</div>
+
+<section class="map" id="executive-solution-map">
+  <div class="mh"><h2>EXECUTIVE SOLUTION MAP</h2><p>Screenshot this section for the Statement of Work. Mastercard · LaunchGate · 12 Oct 2026</p></div>
+  <div class="chain">
+    <div class="cell"><h3>Customer evidence</h3>
+      <div class="sticky y"><q>Just to create a virtual machine takes 6 to 8 months. Around 12 handoffs. Ideal state is 1. Deployment is not enough, it includes policy and orchestration. Human review is important.</q></div>
+      <small>Maria, Business Development, Mastercard. Discovery, 12 Oct 2026. <span class="tag e">E</span></small></div>
+    <div class="cell"><h3>Core problem</h3>
+      <div class="sticky p">Moving from an approved idea to a policy-compliant, development-ready cloud environment is a long, serial chain of manual handoffs in which compliance is re-proved by people every time.</div>
+      <small>One clear problem statement. Duration and handoff count as reported, not yet measured. <span class="tag e">E</span></small></div>
+    <div class="cell"><h3>Affected person</h3>
+      <div class="sticky b">Mastercard engineers and business owners waiting to start building, and the security and compliance reviewers who repeat the same reviews.</div>
+      <small>Primary user: internal requester. Reviewer roles inferred from "guardrails". <span class="tag h">H</span></small></div>
+    <div class="cell"><h3>Proposed solution</h3>
+      <div class="sticky g">LaunchGate: a policy-aware deployment control plane on the Microsoft cloud. One request; Azure AI Foundry agents prepare the evidence pack and draft the Terraform with GitHub Copilot; an Azure Policy-style gate decides; humans approve in Teams; GitHub enforces the gate; everything audited. Agents prepare, people authorize.</div>
+      <small>Prototype scope: one AWS dev-environment template, 8 rules citing public standards, three demo scenarios, simulated execution.</small></div>
+    <div class="cell"><h3>Expected impact</h3>
+      <div class="sticky y"><ul><li>Handoffs: ~12 manual → 1 request + required approvals</li><li>Policy checks automated, repeatable, and portable to AWS via Defender for Cloud</li><li>Blockers visible in minutes, not weeks</li><li>Process survives staff turnover</li></ul></div>
+      <small>Targets are hypotheses to validate. Prototype measures handoffs removed, violations caught, approvals enforced, audit completeness. <span class="tag h">H</span></small></div>
+  </div>
+</section>
+
+<div class="openq"><b>Open questions</b> to confirm with Mastercard or state as assumptions to EY:
+  <ul>
+    <li>Does "6 to 8 months" describe one environment request or the whole program readiness cycle?</li>
+    <li>Which teams own the 12 handoffs, and which are hard legal or regulatory gates?</li>
+    <li>How many environment requests per year? Cost of one month of delay?</li>
+    <li>Current tooling: ticketing, infrastructure as code, approval system?</li>
+    <li>Which policies could be encoded as rules today (region, encryption, logging, data class)?</li>
+    <li>Who at Mastercard would sponsor a pilot after the prototype?</li>
+  </ul>
+</div>
+</body></html>
