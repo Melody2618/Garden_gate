@@ -1,23 +1,48 @@
-// Stateless API client: the browser keeps the list of requests (localStorage) and sends the request object with each operation.
-// x-user / x-role headers stand in for Microsoft Entra ID claims in the prototype.
-const KEY = 'launchgate.requests';
-const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
-const save = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {} };
-const upsert = (req) => { const list = load().filter((q) => q.id !== req.id); list.unshift(req); save(list); return req; };
-export const api = (user, role) => {
-  const h = { 'Content-Type': 'application/json', 'x-user': user, 'x-role': role };
-  const call = async (op, body) => { const r = await fetch(`/api/gate/${op}?op=${op}`, { method: 'POST', headers: h, body: JSON.stringify(body || {}) }); const b = await r.json(); if (!r.ok) throw new Error(b.error || r.statusText); return b; };
-  const get = async (id) => load().find((q) => q.id === id);
+// API client. The server is the source of truth: the browser sends request ids, never request objects, and stores nothing
+// but a short-lived signed token per demo user (in memory). Roles are decided by the server from the signed-in user.
+// In a pilot, sign-in moves to Microsoft Entra ID via Static Web Apps auth.
+// Passwords are typed by the person, never shipped in this bundle (anything here is public). Each demo account can have
+// its own password on the server; running locally, every account accepts launchgate-demo.
+const passwords = {};
+const tokens = {};
+const pending = {}; // one sign-in prompt per account even if several calls need a token at once
+
+const post = async (op, body, token) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const r = await fetch(`/api/gate/${op}?op=${op}`, { method: 'POST', headers, body: JSON.stringify(body || {}) });
+  const b = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(b.error || r.statusText), { status: r.status });
+  return b;
+};
+
+export const api = (user) => {
+  const signIn = () => pending[user] ||= (async () => {
+    if (passwords[user] === undefined) passwords[user] = window.prompt(`Password for ${user}`) ?? '';
+    try { tokens[user] = (await post('login', { username: user, password: passwords[user] })).token; }
+    catch (e) { delete passwords[user]; throw e; } // wrong password: ask again next time
+  })().finally(() => { delete pending[user]; });
+  const token = async (fresh) => {
+    if (fresh || !tokens[user]) await signIn();
+    return tokens[user];
+  };
+  // Retry once with a fresh token if the old one expired or the server restarted with a new secret.
+  const call = async (op, body) => {
+    try { return await post(op, body, await token()); }
+    catch (e) { if (e.status !== 401) throw e; return post(op, body, await token(true)); }
+  };
   return {
+    me: () => call('me'),
     rules: () => call('rules'),
-    list: async () => load(),
-    get,
-    create: async (form) => upsert(await call('create', { form })),
-    approve: async (id, decision, note) => upsert(await call('approve', { req: await get(id), decision, note })),
-    deploy: async (id) => upsert(await call('deploy', { req: await get(id) })),
-    explain: async (id, question) => { const out = await call('explain', { req: await get(id), question }); upsert(out.req); return out; },
-    audit: async (id) => (await get(id))?.audit || [],
-    metrics: async () => { const all = load(); const done = all.filter((q) => q.deployment); const avg = done.length ? done.reduce((s, q) => s + (new Date(q.deployment.startedAt) - new Date(q.createdAt)) / 60000, 0) / done.length : null; return { requests: all.length, blocked: all.filter((q) => q.status === 'blocked').length, deployed: done.length, baselineHandoffs: 12, handoffsPerRequest: 1, avgMinutesRequestToDeploy: avg }; },
-    reset: () => save([]),
+    list: () => call('list'),
+    get: (id) => call('get', { id }),
+    create: (form) => call('create', { form }),
+    ingest: (id, code) => call('ingest', { id, code }),
+    approve: (id, decision, note) => call('approve', { id, decision, note }),
+    deploy: (id) => call('deploy', { id }),
+    explain: (id, question) => call('explain', { id, question }),
+    audit: (id) => call('audit', { id }),
+    metrics: () => call('metrics'),
+    exportAudit: () => call('export'),
   };
 };

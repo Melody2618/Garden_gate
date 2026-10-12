@@ -4,17 +4,28 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 delete process.env.FOUNDRY_PROJECT_ENDPOINT; delete process.env.FOUNDRY_AGENT_ID;
+delete process.env.SUPABASE_URL; delete process.env.SUPABASE_SERVICE_KEY;
+process.env.RAG_ENABLED = 'off'; // no local model: the "offline" checks below must get the deterministic path
 const api = path.join(__dirname, '..', 'api');
-const { create, handle } = require(path.join(api, 'src/lib/core'));
+const { handle } = require(path.join(api, 'src/lib/core'));
 const { explain, memo, toBicepParams, isOnTopic, unknownRuleIds, REFUSAL } = require(path.join(api, 'src/lib/explain'));
-const { RULES } = require(path.join(api, 'src/lib/engine'));
+const { RULES, evaluate } = require(path.join(api, 'src/lib/engine'));
 const load = (n) => JSON.parse(fs.readFileSync(path.join(api, 'scenarios', n + '.json'), 'utf8'));
 const fake = (text) => async () => text;
+// A request as core.js would store it, for calling explain/memo directly (no validation, so over-long names can be tested).
+let n = 0;
+const create = (form) => {
+  const req = { ...form, id: `REQ-${String(++n).padStart(8, '0')}`, createdAt: new Date().toISOString(), requester: 'demo.engineer', approvals: {} };
+  req.evaluation = evaluate(req);
+  req.status = req.evaluation.verdict === 'blocked' ? 'blocked' : 'awaiting-approval';
+  return req;
+};
+const token = async (user) => 'Bearer ' + (await handle('login', { username: user, password: 'launchgate-demo' })).body.token;
 
 (async () => {
-  const blocked = create(load('blocked'), 'eng');
-  const ok = create(load('approved'), 'eng');
-  const agentpay = create(load('agentpay'), 'eng');
+  const blocked = create(load('blocked'));
+  const ok = create(load('approved'));
+  const agentpay = create(load('agentpay'));
   const blockedIds = blocked.evaluation.failed;
 
   // 1. Off-topic questions are refused without calling the model.
@@ -42,13 +53,15 @@ const fake = (text) => async () => text;
   for (const id of blockedIds) assert.ok(offline.answer.includes(id), id);
 
   // 4. Risk memo through the existing explain operation (no other API file changes).
-  const viaApi = await handle('explain', { req: ok, question: 'Draft the risk memo' }, { 'x-role': 'security' });
+  const stored = (await handle('create', { form: load('approved') }, { authorization: await token('demo.engineer') })).body;
+  const sec = { authorization: await token('sec.reviewer') };
+  const viaApi = await handle('explain', { id: stored.id, question: 'Draft the risk memo' }, sec);
   assert.strictEqual(viaApi.status, 200);
   assert.match(viaApi.body.source, /^risk memo · deterministic$/);
   assert.match(viaApi.body.answer, /^RISK MEMO REQ-/);
   assert.match(viaApi.body.answer, /does not recommend approval/);
   assert.ok(viaApi.body.memo.markdown.includes('## Who must approve'));
-  assert.ok(viaApi.body.req.audit.some((a) => a.action === 'explained'), 'memo is audited');
+  assert.ok((await handle('audit', { id: stored.id }, sec)).body.some((a) => a.action === 'explained'), 'memo is audited');
   const mb = await memo(blocked, blocked.evaluation);
   assert.deepStrictEqual(mb.memo.facts.failed.map((f) => f.id).sort(), [...blockedIds].sort());
   assert.match(mb.memo.facts.recommendation, /Return to requester/); assert.strictEqual(mb.memo.facts.deployment, null);
@@ -68,7 +81,7 @@ const fake = (text) => async () => text;
   const bicep = fs.readFileSync(path.join(__dirname, '..', 'infra', 'templates', 'dev-environment.bicep'), 'utf8');
   const declared = [...bicep.matchAll(/^param (\w+) /gm)].map((m) => m[1]).sort();
   for (const name of ['agentpay', 'approved', 'compliant']) {
-    const req = create(load(name), 'eng');
+    const req = create(load(name));
     assert.deepStrictEqual(Object.keys(toBicepParams(req).parameters.parameters).sort(), declared, name);
   }
   assert.strictEqual(toBicepParams(agentpay).parameters.parameters.program.value, 'agent-pay');
@@ -76,7 +89,7 @@ const fake = (text) => async () => text;
   assert.throws(() => toBicepParams({ ...ok, costCenter: '' }), /GG-006/);
   assert.throws(() => toBicepParams({ ...ok, projectName: 'x'.repeat(41) }), /longer than 40/);
   assert.strictEqual(toBicepParams({ ...ok, projectName: 'Merchant Onboarding!' }).parameters.parameters.projectName.value, 'merchant-onboarding');
-  const tooLong = create({ ...load('approved'), projectName: 'merchant-onboarding-platform-for-partner-banks-v2' }, 'eng');
+  const tooLong = create({ ...load('approved'), projectName: 'merchant-onboarding-platform-for-partner-banks-v2' });
   assert.match((await memo(tooLong, tooLong.evaluation)).answer, /cannot be built/);
 
   console.log('agent tests passed: off-topic refused, unknown and lookalike rule IDs rejected, offline fallback, memo via explain (audited, no decision), Agent Pay memo, params match template');

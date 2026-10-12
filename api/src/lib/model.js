@@ -9,10 +9,13 @@ const FACTORS = [
   { key: 'tlsOnly', label: 'Transport security', score: (r) => (r.tlsOnly ? 0 : 10), why: (r) => (r.tlsOnly ? 'TLS only' : 'plain HTTP allowed') },
   { key: 'loggingEnabled', label: 'Observability', score: (r) => (r.loggingEnabled ? 0 : 5), why: (r) => (r.loggingEnabled ? 'logs on' : 'no logs') },
 ];
+// A request that is not blocked scores at most 45 (restricted data, everything else compliant): every score above that
+// needs a setting the rule engine blocks. So 'high' is where cardholder data lands, and it must bring in compliance;
+// 'critical' only labels blocked requests, which can never be approved.
 const TIERS = [
   { max: 15, tier: 'low', label: 'Low risk', approvers: ['platform'], sla: 'same day' },
   { max: 40, tier: 'medium', label: 'Medium risk', approvers: ['security', 'platform'], sla: '1–2 days' },
-  { max: 70, tier: 'high', label: 'High risk', approvers: ['security', 'platform'], sla: '2–5 days' },
+  { max: 70, tier: 'high', label: 'High risk', approvers: ['security', 'compliance', 'platform'], sla: '2–5 days' },
   { max: 100, tier: 'critical', label: 'Critical risk', approvers: ['security', 'compliance', 'platform'], sla: '1–2 weeks' },
 ];
 // The twelve handoffs Maria described, as they typically occur in a regulated enterprise, and what LaunchGate does with each.
@@ -24,7 +27,7 @@ const HANDOFFS = [
   { n: 5, name: 'Security questionnaire', today: 'Spreadsheet of 60+ questions', mode: 'automated', with: 'Rules GG-001..007 evaluated in seconds with PCI DSS / NIST citations' },
   { n: 6, name: 'Network / firewall request', today: 'Separate ticket to network team', mode: 'automated', with: 'Private endpoint enforced by rule GG-004 and template' },
   { n: 7, name: 'Identity and access request', today: 'IAM team creates service accounts', mode: 'automated', with: 'Managed identity required (GG-007); roles from Entra ID' },
-  { n: 8, name: 'Compliance / PCI review', today: 'Compliance reviews evidence by hand', mode: 'human', with: 'Security approver reads the agent\'s evidence pack; kept human for confidential and restricted data' },
+  { n: 8, name: 'Compliance / PCI review', today: 'Compliance reviews evidence by hand', mode: 'human', with: 'Security approver reads the agent\'s evidence pack; kept human for confidential and restricted data, and the compliance officer also signs for restricted (cardholder) data' },
   { n: 9, name: 'Cost approval', today: 'Finance approves spend', mode: 'merged', with: 'Dev tier and cost center pre-approved in template' },
   { n: 10, name: 'Change ticket', today: 'Change advisory board', mode: 'human', with: 'Platform approver signs the deployment; GitHub environment gate enforces it' },
   { n: 11, name: 'Provisioning', today: 'Infra team runs scripts by hand', mode: 'automated', with: 'Deployment plan from the approved Bicep (simulated in prototype, Azure Deployment Environments in pilot)' },

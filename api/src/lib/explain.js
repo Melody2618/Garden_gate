@@ -6,10 +6,14 @@
 //   1. Off-topic questions are refused before the model is called.
 //   2. Any rule ID the agent mentions must exist in rules.json, or the deterministic answer is used instead.
 //   3. A memo summary that tells the approver what to decide is discarded. Humans decide.
-//   4. If Foundry is not configured or fails, a deterministic answer is returned, so the demo works offline.
+//   4. If no model is available or it fails, a deterministic answer is returned, so the demo works offline.
+// Answers carry aiGenerated so the portal can label model output as such (transparency). Submitted code never goes to
+// Foundry (agentView has no code); only the local model sees it, fenced as untrusted (rag/index.js).
 //
 // Ask "draft the risk memo" in the portal's agent box to get the memo for a request.
 const { RULES } = require('./engine');
+const { fail } = require('./errors');
+const DISCLAIMER = 'AI-generated explanation. It can be wrong; the rule results above are authoritative and only humans approve.';
 
 const RULE_IDS = new Set(RULES.map((r) => r.id));
 const REFUSAL = "I can only explain this request's policy results.";
@@ -38,7 +42,7 @@ const TEMPLATE = 'infra/templates/dev-environment.bicep';
 const ALLOWED_REGIONS = ['eastus', 'eastus2', 'centralus']; // same list as rule GG-003 and the template's @allowed
 const DATA_CLASSES = ['internal', 'confidential', 'restricted'];
 const MAX_NAME = 40; // keeps 'app-<name>-dev' and 'log-<name>-dev' within Azure name limits; storage is shortened in the template
-const bad = (msg) => Object.assign(new Error(msg), { status: 400 });
+const bad = (msg) => fail(400, msg);
 
 function cleanProjectName(name) {
   const slug = String(name || '').toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
@@ -103,29 +107,46 @@ const agentView = (req, evaluation) => ({
 });
 
 // ---------- Explanation ----------
+// Deterministic answer, worded for where the request actually is.
 function deterministicExplanation(req, evaluation) {
   const failed = evaluation.results.filter((r) => r.status === 'fail');
   if (failed.length) return `Request ${req.id} is blocked by ${failed.length} rule(s): ` + failed.map((f) => `${f.id} ${f.name} (${f.controls[0]}). Fix: ${f.fix}`).join(' | ');
-  const state = { approved: 'approved and ready to deploy', deployed: 'deployed', rejected: 'sent back by an approver' }[req.status];
-  if (state) return `Request ${req.id} passed all automated checks and is ${state}. Approvers: ${evaluation.requiredApprovers.join(', ')}.`;
-  return `Request ${req.id} passed all automated checks. It is waiting on human approval from: ${evaluation.requiredApprovers.join(', ')}.`;
+  const required = evaluation.requiredApprovers;
+  const decided = (d) => required.filter((a) => req.approvals?.[a]?.decision === d).join(', ');
+  switch (req.status) {
+    case 'rejected': return `Request ${req.id} passed all automated checks but was sent back by: ${decided('reject')}. Read their note on the request, change what they asked for and submit a new request.`;
+    case 'approved': return `Request ${req.id} passed all automated checks and has every required approval (${required.join(', ')}). It is ready for the platform team to deploy.`;
+    case 'deployed': return `Request ${req.id} passed all automated checks, was approved by ${required.join(', ')} and has been deployed (simulated) to ${req.deployment?.resourceGroup} in ${req.deployment?.region}.`;
+    default: return `Request ${req.id} passed all automated checks. It is waiting on human approval from: ${required.filter((a) => !req.approvals?.[a]).join(', ')}.`;
+  }
 }
 
-// Called by core.js for the `explain` operation. _ask is injectable for tests; production uses Foundry.
+// Called by core.js for the `explain` operation. Order: 1) local open model + RAG (when RAG_ENABLED is not 'off'),
+// 2) Azure AI Foundry agent, 3) deterministic text. _ask is injectable for tests and replaces both model paths.
 async function explain(req, evaluation, question, _ask) {
-  if (!isOnTopic(question)) return { source: 'guardrail', answer: REFUSAL };
+  if (!isOnTopic(question)) return { source: 'guardrail', aiGenerated: false, answer: REFUSAL };
   if (MEMO.test(question || '')) return memo(req, evaluation, _ask);
+  question = question || 'Why is my request blocked and what should I change?';
   const fallback = deterministicExplanation(req, evaluation);
+  const deterministic = (source) => ({ source, aiGenerated: false, answer: fallback });
+
+  if (!_ask && process.env.RAG_ENABLED !== 'off') {
+    try {
+      const out = await require('./rag').answer(req, evaluation, question);
+      if (out) return { source: 'rag-local', aiGenerated: true, disclaimer: DISCLAIMER, ...out };
+    } catch (err) { console.warn('rag unavailable:', err.message); }
+  }
+
   const ask = _ask || (foundryConfigured() ? askFoundry : null);
-  if (!ask) return { source: 'deterministic', answer: fallback };
+  if (!ask) return deterministic('deterministic');
   try {
-    const content = `MODE: explain\nQuestion: ${question || 'Why is my request blocked and what should I change?'}\n\nData: ${JSON.stringify(agentView(req, evaluation))}`;
+    const content = `MODE: explain\nQuestion: ${question}\n\nData: ${JSON.stringify(agentView(req, evaluation))}`;
     const answer = await ask(content);
     const unknown = unknownRuleIds(answer);
-    if (unknown.length) return { source: `deterministic (agent cited unknown rule ${unknown.join(', ')})`, answer: fallback };
-    return { source: 'foundry', answer };
+    if (unknown.length) return deterministic(`deterministic (agent cited unknown rule ${unknown.join(', ')})`);
+    return { source: 'foundry', aiGenerated: true, disclaimer: DISCLAIMER, answer };
   } catch (err) {
-    return { source: 'deterministic (foundry unavailable: ' + err.message + ')', answer: fallback };
+    return deterministic('deterministic (foundry unavailable: ' + err.message + ')');
   }
 }
 
@@ -201,7 +222,8 @@ async function memo(req, evaluation, _ask) {
       else { summary = text; source = 'foundry'; }
     } catch (err) { source = 'deterministic (foundry unavailable: ' + err.message + ')'; }
   }
-  return { source: 'risk memo · ' + source, answer: memoText(facts, summary), memo: { facts, summary, markdown: memoMarkdown(facts, summary) } };
+  const ai = source === 'foundry';
+  return { source: 'risk memo · ' + source, aiGenerated: ai, ...(ai && { disclaimer: DISCLAIMER }), answer: memoText(facts, summary), memo: { facts, summary, markdown: memoMarkdown(facts, summary) } };
 }
 
 module.exports = { explain, memo, toBicepParams, isOnTopic, unknownRuleIds, REFUSAL };

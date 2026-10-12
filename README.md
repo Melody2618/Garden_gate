@@ -9,17 +9,19 @@ Policy-aware deployment control plane. One request replaces ~12 handoffs. A dete
 ## Run it locally (5 min)
 ```bash
 npm install --prefix web && npm install --prefix api
-npm test --prefix api                      # rule engine: 3 scenarios pass
+npm test --prefix api                      # rule engine, RAG and security tests
 npm install -g @azure/static-web-apps-cli azure-functions-core-tools@4
 swa start                                   # portal http://localhost:4280 (web on 5173 + api on 7071)
 ```
 No Foundry yet? The explainer falls back to a deterministic answer, so the whole demo works offline.
 
+The portal asks for a password the first time you use each demo account. Locally every account accepts `launchgate-demo`; a hosted deployment refuses it and uses the passwords you set (see Deploy).
+
 ## Demo path (what we show, 5 min)
 1. Engineer loads **compliant** scenario → Submit → all 8 rules pass → `awaiting-approval` (platform only).
 2. Load **blocked** → Submit → 5 rules fail, each names its control (PCI DSS 4.0.1 / NIST 800-53 / CIS Azure / Azure Policy) and a fix → ask the Foundry agent "why is it blocked?".
 3. Load **needs security approval** (confidential data) → switch role to *Security approver* → Approve → switch to *Platform approver* → Approve → `approved` → **Deploy (simulated Azure)** from the Copilot-drafted Bicep template → audit log + metrics tiles (12 handoffs → 1).
-Also show: requester cannot approve own request (403), deploy before approval is refused (409).
+Also show: requester cannot approve own request (403), deploy before approval is refused (409). Restricted (cardholder) data that passes the rules also needs the *Compliance officer*.
 
 ## Work split (2h30, everyone commits to `main` via small PRs; Claude/Copilot on each laptop)
 | Who | Owns | Files | Done when |
@@ -32,7 +34,11 @@ Also show: requester cannot approve own request (403), deploy before approval is
 Branch naming: `melanie/portal`, `jayden/api`, `adrian/agent`, `azra/infra`. Rebase on `main` often; nobody force-pushes.
 
 ## Deploy on Vercel (2 min)
-vercel.com → Add New Project → import `Melody2618/Garden_gate` → **Root Directory must stay `.` (repo root)**, Framework Preset `Other` → Deploy. `vercel.json` handles install, build and the `/api/gate` function. Add `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_AGENT_ID`, `FOUNDRY_MODEL` under Settings → Environment Variables when Foundry is ready.
+vercel.com → Add New Project → import `Melody2618/Garden_gate` → **Root Directory must stay `.` (repo root)**, Framework Preset `Other` → Deploy. `vercel.json` handles install, build and the `/api/gate` function. Under Settings → Environment Variables, add these **before the first sign-in**, or sign-in returns 503:
+- `LAUNCHGATE_SECRET`: a long random string (e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`). Every serverless instance must share it.
+- `DEMO_PASSWORDS`: one password per account, e.g. `{"demo.engineer":"…","sec.reviewer":"…","platform.lead":"…"}`, so the person holding the requester password cannot also approve. Or set `DEMO_PASSWORD` for one shared password. The published `launchgate-demo` is never accepted when hosted.
+
+Add `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_AGENT_ID`, `FOUNDRY_MODEL` when Foundry is ready. Using Supabase? Run `api/db/schema.sql` in the Supabase SQL editor, and run it again after pulling changes: it upgrades existing tables in place.
 
 ## Azure setup (~20 min)
 1. **Azure for Students** → https://azure.microsoft.com/free/students → sign in with your school account.
@@ -46,11 +52,11 @@ vercel.com → Add New Project → import `Melody2618/Garden_gate` → **Root Di
    export FOUNDRY_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project>
    cd api && npm install && node ../agent/create-agent.mjs     # prints FOUNDRY_AGENT_ID=asst_...
    ```
-7. Put both values in `api/local.settings.json` (copy from `.sample`) for local runs, and in the Static Web App → **Settings → Environment variables** for the live site. Your identity needs the **Azure AI User** role on the Foundry resource (Access control → Add role assignment). For the live SWA API, enable the managed identity on the Static Web App and give it the same role.
+7. Put both values in `api/local.settings.json` (copy from `.sample`) for local runs, and in the Static Web App → **Settings → Environment variables** for the live site, together with `LAUNCHGATE_SECRET` and `DEMO_PASSWORDS` (or `DEMO_PASSWORD`) as described under Deploy on Vercel; without them nobody can sign in. Your identity needs the **Azure AI User** role on the Foundry resource (Access control → Add role assignment). For the live SWA API, enable the managed identity on the Static Web App and give it the same role.
 8. Test: ask the agent in the portal; the answer source changes from `deterministic` to `foundry`.
 
 ## Security & governance (maps to the starter-kit review)
-Identity: roles from headers in the prototype, Entra ID via SWA auth in pilot; separation of duties enforced in `api/src/functions/requests.js`. Secrets: none in code, Foundry via `DefaultAzureCredential`. Data: synthetic requests only, no personal data. Logging: append-only audit, no secrets logged. AI: read-only agent, cites rule IDs only, deterministic fallback. Governance: rules in `api/rules/rules.json` cite public controls; Mastercard's catalogue replaces them in a pilot.
+Full detail in [docs/security.md](docs/security.md). Identity: signed tokens, roles decided by the server (`api/src/lib/auth.js`), per-account passwords and sign-in lockout in the prototype, Entra ID via SWA auth in pilot; separation of duties and concurrent-change protection enforced in `api/src/lib/core.js` and `api/src/lib/db.js`. Secrets: none in code, Foundry via `DefaultAzureCredential`. Data: synthetic requests only, no personal data. Logging: append-only audit, no secrets logged. AI: read-only agent, cites rule IDs only, deterministic fallback. Governance: rules in `api/rules/rules.json` cite public controls; Mastercard's catalogue replaces them in a pilot.
 
 ## Customer concern → solution mapping (Build Readiness checklist)
 | # | Concern (Discovery) | Where it is addressed |

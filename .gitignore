@@ -2,3 +2,5 @@ node_modules/
 dist/
 api/local.settings.json
 .env
+package-lock.*
+npm-debug.log

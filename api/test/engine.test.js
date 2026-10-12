@@ -7,4 +7,6 @@ const ap = evaluate(load('agentpay')); assert.strictEqual(ap.verdict, 'compliant
 const a = evaluate(load('approved')); assert.strictEqual(a.verdict, 'compliant'); assert.deepStrictEqual(a.requiredApprovers.sort(), ['platform','security']);
 assert.strictEqual(c.model.tier, 'low'); assert.strictEqual(b.model.tier, 'critical'); assert.strictEqual(a.model.tier, 'medium'); assert.ok(a.model.summary.human <= 2);
 assert.deepStrictEqual(evaluate(load('blocked')), evaluate(load('blocked')), 'deterministic');
-console.log('engine tests passed: compliant, blocked (6 rules named), agent-pay (governance step added), approved (security + platform), deterministic');
+// Cardholder data that passes every rule still needs the compliance officer (the only path that reaches that role)
+const r = evaluate({ ...load('approved'), dataClass: 'restricted' }); assert.strictEqual(r.verdict, 'compliant'); assert.strictEqual(r.model.tier, 'high'); assert.deepStrictEqual(r.requiredApprovers.sort(), ['compliance','platform','security']);
+console.log('engine tests passed: compliant, blocked (6 rules named), agent-pay (governance step added), approved (security + platform), restricted (+ compliance), deterministic');

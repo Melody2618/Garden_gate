@@ -7,7 +7,7 @@ const ROLES = {
   engineer: { user: 'demo.engineer', api: 'requester', title: 'Engineer', blurb: 'I fill in the technical details and want to know immediately which rule I failed and how to fix it.', cta: 'Technical request' },
   security: { user: 'sec.reviewer', api: 'security', title: 'Security reviewer', blurb: 'I only want to see requests that passed the automated checks, with the evidence pack ready.', cta: 'Review evidence' },
   platform: { user: 'platform.lead', api: 'platform', title: 'Platform approver', blurb: 'I sign the deployment and want the audit trail written for me.', cta: 'Approve and deploy' },
-  compliance: { user: 'compliance.officer', api: 'compliance', title: 'Compliance officer', blurb: 'For critical workloads I need to confirm PCI DSS and NYDFS coverage before anything moves.', cta: 'Confirm coverage' },
+  compliance: { user: 'compliance.officer', api: 'compliance', title: 'Compliance officer', blurb: 'For cardholder-data workloads I need to confirm PCI DSS and NYDFS coverage before anything moves.', cta: 'Confirm coverage' },
   exec: { user: 'exec.viewer', api: 'viewer', title: 'Executive view', blurb: 'Show me the handoffs we removed, the time we saved, and where this fits in Mastercard\'s systems.', cta: 'See the impact' },
 };
 const STACK = ['Azure AI Foundry Agent Service', 'Azure OpenAI', 'Azure Functions', 'Azure Static Web Apps', 'Azure Cosmos DB', 'Microsoft Entra ID', 'Azure Policy', 'Microsoft Defender for Cloud', 'Microsoft Fabric'];
@@ -34,9 +34,9 @@ export default function App() {
   const R = role ? ROLES[role] : null;
   const c = api(R?.user || 'anon', R?.api || 'viewer');
 
-  const refresh = async (id) => { setList(await c.list()); setMetrics(await c.metrics()); if (id) { setSel(await c.get(id)); setAudit(await c.audit(id)); } };
+  const refresh = async (id) => { if (!R) return; setList(await c.list()); setMetrics(await c.metrics()); if (id) { setSel(await c.get(id)); setAudit(await c.audit(id)); } };
   useEffect(() => { refresh().catch(() => {}); }, []);
-  useEffect(() => { refresh(sel?.id).catch(() => {}); }, [role]);
+  useEffect(() => { refresh(sel?.id).catch((e) => [401, 429, 503].includes(e.status) && setErr(e.message)); }, [role]); // show sign-in problems only
   const run = (fn) => fn().then(() => setErr('')).catch((e) => setErr(e.message));
   const set = (k, v) => setForm({ ...form, [k]: v });
   const loadScenario = async (name) => setForm(await fetch(`/scenarios/${name}.json`).then((r) => r.json()));
@@ -206,7 +206,7 @@ export default function App() {
       {role === 'owner' && <OwnerForm />}
       {role === 'engineer' && <EngineerForm />}
       {role === 'security' && <Inbox title="Security inbox" lead="Only requests that passed the automated checks and need a security decision. The evidence pack is attached; the agent's memo is one click away." filter={(q) => q.evaluation.requiredApprovers.includes('security') && q.status !== 'blocked'} />}
-      {role === 'compliance' && <Inbox title="Compliance inbox" lead="Critical-tier requests that need a compliance confirmation of PCI DSS and NYDFS coverage." filter={(q) => q.evaluation.requiredApprovers.includes('compliance') && q.status !== 'blocked'} />}
+      {role === 'compliance' && <Inbox title="Compliance inbox" lead="Cardholder-data (high-risk) requests that need a compliance confirmation of PCI DSS and NYDFS coverage." filter={(q) => q.evaluation.requiredApprovers.includes('compliance') && q.status !== 'blocked'} />}
       {role === 'platform' && <Inbox title="Platform inbox" lead="Approve the deployment, then deploy. The audit trail is written for you." filter={(q) => q.status !== 'blocked'} />}
       {(role === 'owner' || role === 'engineer') && list.length > 0 && <Inbox title="Your requests" lead="Click one to see where it stands." filter={() => true} />}
       {role === 'exec' && <Exec />}
